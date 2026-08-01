@@ -273,6 +273,9 @@
         <div>
           <div class="asg-toast-title">${title}</div>
           <div class="asg-toast-desc">${desc}</div>
+          <div style="font-size: 0.7rem; color: #818cf8; font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+            <span>⚡</span> Powered by ASG Offline Web Service
+          </div>
         </div>
       `;
 
