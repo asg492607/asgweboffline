@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "API-based service and SDK to make web applications work fast and offline anywhere",
   "main": "server.js",
+  "bin": {
+    "asg-offline": "./bin/cli.js"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js"

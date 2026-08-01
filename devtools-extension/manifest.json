@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "ASG Offline DevTools Inspector",
+  "version": "1.0.0",
+  "description": "Official Chrome DevTools inspector panel for ASG Offline Web Service (CacheStorage, IndexedDB Queue, ServiceWorker & Sync Stream).",
+  "devtools_page": "devtools.html",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ]
+}

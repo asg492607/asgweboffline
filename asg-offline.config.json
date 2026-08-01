@@ -1,0 +1,12 @@
+{
+  "appId": "asgofflinewebservice-offline",
+  "appName": "asgofflinewebservice",
+  "cacheStrategy": "stale-while-revalidate",
+  "precacheUrls": [
+    "/",
+    "/index.html"
+  ],
+  "enableBackgroundSync": true,
+  "enableOfflineNotifications": true,
+  "serverUrl": "http://localhost:3000"
+}

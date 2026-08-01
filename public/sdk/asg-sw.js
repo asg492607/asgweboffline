@@ -95,7 +95,7 @@ async function cacheFirst(request) {
   const cachedResponse = await caches.match(request);
   if (cachedResponse) {
     // Send background update check
-    fetch(request).then((networkResponse) => {
+    fetch(request.clone()).then((networkResponse) => {
       if (networkResponse && networkResponse.status === 200) {
         caches.open(CACHE_NAME).then((cache) => cache.put(request, networkResponse));
       }
@@ -103,14 +103,17 @@ async function cacheFirst(request) {
     return cachedResponse;
   }
   try {
-    const networkResponse = await fetch(request);
+    const networkResponse = await fetch(request.clone());
     if (networkResponse && networkResponse.status === 200) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }
     return networkResponse;
   } catch (err) {
-    return new Response(OFFLINE_FALLBACK_HTML, { headers: { 'Content-Type': 'text/html' } });
+    if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
+      return new Response(OFFLINE_FALLBACK_HTML, { headers: { 'Content-Type': 'text/html' } });
+    }
+    return new Response('', { status: 504, statusText: 'Gateway Timeout (Offline)' });
   }
 }
 
@@ -119,22 +122,36 @@ async function staleWhileRevalidate(request) {
   const cache = await caches.open(CACHE_NAME);
   const cachedResponse = await cache.match(request);
 
-  const fetchPromise = fetch(request).then((networkResponse) => {
+  const fetchPromise = fetch(request.clone()).then((networkResponse) => {
     if (networkResponse && networkResponse.status === 200) {
       cache.put(request, networkResponse.clone());
     }
     return networkResponse;
-  }).catch((err) => {
-    console.log('[ASG ServiceWorker] Network fetch failed, falling back to cache');
-  });
+  }).catch(() => null);
 
-  return cachedResponse || fetchPromise || new Response(OFFLINE_FALLBACK_HTML, { headers: { 'Content-Type': 'text/html' } });
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+
+  const networkRes = await fetchPromise;
+  if (networkRes) {
+    return networkRes;
+  }
+
+  if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
+    return new Response(OFFLINE_FALLBACK_HTML, { headers: { 'Content-Type': 'text/html' } });
+  }
+
+  return new Response(JSON.stringify({ error: 'Offline mode active', offline: true }), {
+    status: 503,
+    headers: { 'Content-Type': 'application/json' }
+  });
 }
 
 // Helper: Network-First strategy with Cache Fallback
 async function networkFirst(request) {
   try {
-    const networkResponse = await fetch(request);
+    const networkResponse = await fetch(request.clone());
     if (networkResponse && networkResponse.status === 200) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, networkResponse.clone());

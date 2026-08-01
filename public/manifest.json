@@ -1,0 +1,8 @@
+{
+  "short_name": "asgofflinewebservice",
+  "name": "asgofflinewebservice",
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "display": "standalone"
+}

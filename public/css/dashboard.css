@@ -36,6 +36,11 @@
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+  overflow-x: clip;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--bg-dark);
@@ -47,6 +52,28 @@ body {
   min-height: 100vh;
   line-height: 1.5;
   padding-bottom: 3rem;
+  overflow-x: clip;
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(9, 13, 22, 0.6);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.35);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.65);
 }
 
 /* Header & Top Bar */
@@ -56,11 +83,14 @@ body {
   justify-content: space-between;
   padding: 1.25rem 2.5rem;
   border-bottom: 1px solid var(--border-glass);
-  background: rgba(9, 13, 22, 0.8);
+  background: rgba(9, 13, 22, 0.85);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   position: sticky;
   top: 0;
   z-index: 100;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .brand {
@@ -87,6 +117,7 @@ body {
   letter-spacing: -0.02em;
   background: linear-gradient(135deg, #ffffff, #cbd5e1);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -133,6 +164,7 @@ body {
   max-width: 1320px;
   margin: 0 auto;
   padding: 2rem 1.5rem;
+  width: 100%;
 }
 
 /* Hero Section */
@@ -153,6 +185,7 @@ body {
 .hero h1 span {
   background: linear-gradient(135deg, var(--primary-light), var(--accent-cyan));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -166,20 +199,24 @@ body {
 /* Navigation Tabs */
 .tabs {
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
+  align-items: center;
   gap: 10px;
   margin-bottom: 2.5rem;
   background: rgba(18, 24, 38, 0.5);
-  padding: 6px;
+  padding: 8px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-glass);
-  max-width: fit-content;
-  margin-left: auto;
-  margin-right: auto;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
 .tab-btn {
-  padding: 10px 22px;
+  padding: 10px 20px;
   border-radius: var(--radius-sm);
   border: none;
   background: transparent;
@@ -192,6 +229,8 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .tab-btn:hover {
@@ -209,6 +248,7 @@ body {
 .tab-content {
   display: none;
   animation: fadeIn 0.3s ease;
+  width: 100%;
 }
 
 .tab-content.active {
@@ -223,20 +263,23 @@ body {
 /* Glass Cards Grid */
 .grid-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
+  width: 100%;
 }
 
 .grid-3 {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.5rem;
+  width: 100%;
 }
 
 .grid-4 {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1.25rem;
+  width: 100%;
 }
 
 .glass-card {
@@ -245,7 +288,10 @@ body {
   border-radius: var(--radius-lg);
   padding: 1.75rem;
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   transition: all 0.3s ease;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .glass-card:hover {
@@ -394,8 +440,13 @@ textarea.form-control {
   font-size: 0.85rem;
   color: #a5b4fc;
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 380px;
   white-space: pre-wrap;
-  word-break: break-all;
+  word-break: break-word;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
 .copy-btn {
@@ -491,6 +542,9 @@ textarea.form-control {
   gap: 8px;
   max-height: 280px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 
 .log-item {

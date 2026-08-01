@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ASG Offline Inspector</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+
+  <!-- Header Bar -->
+  <header class="header">
+    <div class="brand">
+      <span class="icon">📡</span>
+      <span class="title">ASG Offline Inspector</span>
+      <span id="badge-status" class="badge online">ONLINE</span>
+    </div>
+    <button id="btn-refresh" class="btn btn-sm">🔄 Refresh Data</button>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <nav class="nav-tabs">
+    <button class="nav-tab active" data-tab="tab-overview">⚡ Overview</button>
+    <button class="nav-tab" data-tab="tab-cache">📦 Cache Storage (<span id="count-cache">0</span>)</button>
+    <button class="nav-tab" data-tab="tab-queue">📋 Offline Queue (<span id="count-queue">0</span>)</button>
+    <button class="nav-tab" data-tab="tab-db">🗄️ In-Browser DB</button>
+  </nav>
+
+  <main class="content">
+    <!-- TAB 1: OVERVIEW -->
+    <div id="tab-overview" class="tab-pane active">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-label">App Identifier</div>
+          <div id="val-app-id" class="metric-value">demo-app</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Network State</div>
+          <div id="val-net-state" class="metric-value highlight">Connected</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Service Worker</div>
+          <div id="val-sw-status" class="metric-value active">Active / Running</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Caching Strategy</div>
+          <div id="val-strategy" class="metric-value">stale-while-revalidate</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>⚡ Direct Engine Controls</h3>
+        <div class="btn-group">
+          <button id="btn-sim-offline" class="btn btn-warning">🔌 Toggle Simulated Offline</button>
+          <button id="btn-trigger-sync" class="btn btn-primary">🔄 Force Background Sync</button>
+          <button id="btn-clear-sw-cache" class="btn btn-danger">🗑️ Clear Cache Storage</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: CACHE STORAGE -->
+    <div id="tab-cache" class="tab-pane">
+      <div class="card-header">
+        <h3>Cached Static Assets & Resources</h3>
+        <button id="btn-clear-cache-tab" class="btn btn-sm btn-danger">Clear All Cache</button>
+      </div>
+      <ul id="cache-list" class="data-list">
+        <li class="empty-msg">Inspecting browser cache...</li>
+      </ul>
+    </div>
+
+    <!-- TAB 3: OFFLINE QUEUE -->
+    <div id="tab-queue" class="tab-pane">
+      <div class="card-header">
+        <h3>Pending Offline Request Queue (IndexedDB)</h3>
+        <button id="btn-flush-queue" class="btn btn-sm btn-primary">Flush & Replay Queue</button>
+      </div>
+      <ul id="queue-list" class="data-list">
+        <li class="empty-msg">No pending requests in offline queue.</li>
+      </ul>
+    </div>
+
+    <!-- TAB 4: IN-BROWSER DB -->
+    <div id="tab-db" class="tab-pane">
+      <div class="card-header">
+        <h3>In-Browser Database Collections (`offline_records`)</h3>
+      </div>
+      <pre id="db-records-pre" class="code-display">Loading IndexedDB records...</pre>
+    </div>
+  </main>
+
+  <script src="panel.js"></script>
+</body>
+</html>
