@@ -5,6 +5,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 
@@ -179,7 +180,7 @@ app.post('/api/v1/analyze-and-generate', (req, res) => {
 
   appsDb.set(appId, appConfig);
 
-  const host = `http://localhost:${PORT}`;
+  const host = process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
 
   // 1. Vanilla HTML / CSS / JS Code
   const vanillaHtmlCode = `<!-- Insert inside <head> of your website (index.html) -->
@@ -377,14 +378,15 @@ app.post('/api/v1/generate', (req, res) => {
     orientation: 'any'
   };
 
-  const scriptTag = `<script src="http://localhost:${PORT}/sdk/asg-offline.js" data-app-id="${config.appId}" data-strategy="${config.cacheStrategy}"></script>`;
+  const host = process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+  const scriptTag = `<script src="${host}/sdk/asg-offline.js" data-app-id="${config.appId}" data-strategy="${config.cacheStrategy}"></script>`;
 
   res.json({
     success: true,
     appId: config.appId,
     scriptTag,
     manifest,
-    serviceWorkerUrl: `http://localhost:${PORT}/sdk/asg-sw.js?appId=${config.appId}`
+    serviceWorkerUrl: `${host}/sdk/asg-sw.js?appId=${config.appId}`
   });
 });
 
@@ -474,10 +476,9 @@ app.post('/api/v1/demo-records', (req, res) => {
 });
 
 // Start listening
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`====================================================`);
-  console.log(`  🚀 ASG Offline Web Service API running at:`);
-  console.log(`  👉 http://localhost:${PORT}`);
-  console.log(`  📦 SDK Embed URL: http://localhost:${PORT}/sdk/asg-offline.js`);
+  console.log(`  🚀 ASG Offline Web Service API running on port ${PORT}`);
+  console.log(`  👉 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`====================================================`);
 });
