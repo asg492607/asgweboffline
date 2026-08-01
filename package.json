@@ -1,0 +1,25 @@
+{
+  "name": "asgofflinewebservice",
+  "version": "1.0.0",
+  "description": "API-based service and SDK to make web applications work fast and offline anywhere",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "pwa",
+    "service-worker",
+    "offline-first",
+    "cache",
+    "sdk",
+    "api",
+    "performance"
+  ],
+  "author": "ASG Team",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
+}
