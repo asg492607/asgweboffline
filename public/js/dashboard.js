@@ -36,8 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (urlGenForm) {
     urlGenForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const websiteUrl = document.getElementById('gen-url-input').value;
-      await generateCodeForUrl(websiteUrl);
+      const frontendUrl = document.getElementById('gen-url-input').value;
+      const backendApiInput = document.getElementById('gen-backend-api-input');
+      const backendApiUrl = backendApiInput ? backendApiInput.value : 'https://api.my-awesome-site.com';
+      await generateCodeForUrl(frontendUrl, backendApiUrl);
     });
   }
 
@@ -52,15 +54,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  async function generateCodeForUrl(websiteUrl) {
+  async function generateCodeForUrl(frontendUrl, backendApiUrl = 'https://api.my-awesome-site.com') {
     try {
       const displayPre = document.getElementById('gen-code-display');
-      displayPre.innerText = '// Generating tailored offline APIs and code for ' + websiteUrl + '...';
+      displayPre.innerText = '// Generating tailored full-stack offline code for Frontend (' + frontendUrl + ') & Backend API (' + backendApiUrl + ')...';
 
       const res = await fetch('/api/v1/analyze-and-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ websiteUrl })
+        body: JSON.stringify({ frontendUrl, backendApiUrl })
       });
 
       const data = await res.json();
@@ -73,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeKey = activeTab ? activeTab.getAttribute('data-snippet') : 'vanilla';
         displayGeneratedSnippet(activeKey);
 
-        showNotification('Offline Engine Code Generated!', `Configured for domain '${data.domain}' (${data.appId})`, 'success');
+        showNotification('Full-Stack Offline Code Generated!', `Configured for Frontend '${data.domain}' & Backend API '${data.backendApiUrl}'`, 'success');
       }
     } catch (err) {
       console.error('Failed to generate code:', err);
@@ -87,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (key === 'vanilla') displayPre.innerText = generatedSnippets.vanillaHtml;
     else if (key === 'react') displayPre.innerText = generatedSnippets.react;
     else if (key === 'vue') displayPre.innerText = generatedSnippets.vue;
+    else if (key === 'apiSync') displayPre.innerText = generatedSnippets.apiSync;
     else if (key === 'sw') displayPre.innerText = generatedSnippets.standaloneSw;
     else if (key === 'manifest') displayPre.innerText = generatedSnippets.manifest;
   }

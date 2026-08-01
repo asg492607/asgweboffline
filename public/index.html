@@ -46,20 +46,37 @@
         <span>⚡ Instant Website URL Offline Engine & Code Generator</span>
         <span class="brand-badge">Auto API & Code Generator</span>
       </div>
-      <p class="card-subtitle">Type your website URL or local link below to analyze and generate ready-to-paste offline integration code.</p>
+      <p class="card-subtitle">Enter your Frontend App URL and Backend API Base URL below to generate tailored offline ServiceWorker, IndexedDB, React, and HTML integration code.</p>
 
-      <form id="url-generator-form" style="display: flex; gap: 12px; margin-bottom: 1.5rem; flex-wrap: wrap;">
-        <input 
-          type="url" 
-          id="gen-url-input" 
-          class="form-control" 
-          placeholder="Enter website link e.g. https://my-website.com or http://localhost:3000" 
-          value="https://my-awesome-site.com" 
-          style="flex: 1; min-width: 280px; font-size: 1rem; padding: 12px 18px;" 
-          required
-        >
-        <button type="submit" class="btn btn-primary" style="padding: 12px 24px; font-size: 1rem;">
-          🚀 Generate Offline Code & APIs
+      <form id="url-generator-form" style="display: flex; gap: 12px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: flex-end;">
+        <div style="flex: 1; min-width: 250px;">
+          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 600;">🌐 Frontend Web Application URL</label>
+          <input 
+            type="url" 
+            id="gen-url-input" 
+            class="form-control" 
+            placeholder="e.g. https://my-app.com or http://localhost:3000" 
+            value="https://my-awesome-site.com" 
+            style="width: 100%; font-size: 0.95rem; padding: 12px 16px;" 
+            required
+          >
+        </div>
+
+        <div style="flex: 1; min-width: 250px;">
+          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 600;">⚡ Backend API Base URL</label>
+          <input 
+            type="url" 
+            id="gen-backend-api-input" 
+            class="form-control" 
+            placeholder="e.g. https://api.my-app.com or http://localhost:5000/api" 
+            value="https://api.my-awesome-site.com" 
+            style="width: 100%; font-size: 0.95rem; padding: 12px 16px;" 
+            required
+          >
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="padding: 12px 24px; font-size: 0.95rem; height: 45px;">
+          🚀 Generate Full-Stack Offline Code
         </button>
       </form>
 
@@ -69,13 +86,14 @@
           <button class="btn btn-secondary snippet-tab active" data-snippet="vanilla">📄 Vanilla HTML / JS</button>
           <button class="btn btn-secondary snippet-tab" data-snippet="react">⚛️ React / Next.js Code</button>
           <button class="btn btn-secondary snippet-tab" data-snippet="vue">🟢 Vue 3 Code</button>
+          <button class="btn btn-secondary snippet-tab" data-snippet="apiSync">⚡ 1-Line DB & API Sync</button>
           <button class="btn btn-secondary snippet-tab" data-snippet="sw">⚙️ Custom sw.js File</button>
           <button class="btn btn-secondary snippet-tab" data-snippet="manifest">📱 manifest.json</button>
         </div>
 
         <div class="code-box" style="margin-top: 0;">
           <button class="btn btn-secondary copy-btn" data-copy="gen-code-display">Copy Code</button>
-          <pre id="gen-code-display" style="min-height: 200px; max-height: 380px;">// Enter your website link above and click "Generate Offline Code & APIs" to view tailored code!</pre>
+          <pre id="gen-code-display" style="min-height: 200px; max-height: 380px;">// Enter your Frontend and Backend URLs above and click "Generate Full-Stack Offline Code" to view tailored code!</pre>
         </div>
       </div>
     </div>
