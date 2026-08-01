@@ -9,6 +9,13 @@ app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 
+// Mandatory Branding Header Middleware
+app.use((req, res, next) => {
+  res.setHeader('X-Powered-By', 'ASG-Offline-Web-Service');
+  res.setHeader('X-ASG-Offline-Engine', 'https://github.com/asg492607/asgweboffline');
+  next();
+});
+
 // In-Memory Database for registered apps
 const appsDb = new Map();
 

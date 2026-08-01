@@ -25,7 +25,15 @@
     }
 
     async init() {
-      console.log(`[ASG Offline SDK] Initializing for App ID: '${this.appId}'`);
+      // 0. Print Mandatory Console Banner Signature
+      console.log(
+        '%c 📡 ASG Offline Web Service Engine %c Protected by ASG %c https://github.com/asg492607/asgweboffline ',
+        'background:#4f46e5; color:#ffffff; font-weight:bold; padding:4px 8px; border-radius:4px 0 0 4px;',
+        'background:#0f172a; color:#818cf8; font-weight:bold; padding:4px 8px;',
+        'background:#1e293b; color:#94a3b8; padding:4px 8px; border-radius:0 4px 4px 0;'
+      );
+
+      console.log(`[ASG Offline Web Service SDK] Initializing for App ID: '${this.appId}'`);
 
       // 1. Fetch remote config from API service
       await this.fetchRemoteConfig();
@@ -39,8 +47,9 @@
       // 4. Attach online/offline event listeners
       this.setupNetworkListeners();
 
-      // 5. Render toast notification container
+      // 5. Render toast notification container & Enforce Branding Watermark
       this.renderNotificationToast();
+      this.enforceMandatoryBranding();
 
       // 6. Log telemetry
       this.sendTelemetry('SDK_INITIALIZED', { isOnline: this.isOnline });
@@ -286,6 +295,68 @@
         toast.classList.remove('visible');
         setTimeout(() => toast.remove(), 300);
       }, 4000);
+    }
+
+    enforceMandatoryBranding() {
+      const renderBadge = () => {
+        let badge = document.getElementById('asg-mandatory-watermark');
+        if (!badge) {
+          badge = document.createElement('a');
+          badge.id = 'asg-mandatory-watermark';
+          badge.href = 'https://github.com/asg492607/asgweboffline';
+          badge.target = '_blank';
+          badge.rel = 'noopener noreferrer';
+          badge.innerHTML = `<span>⚡</span> Offline Protected by <strong style="color:#818cf8;margin-left:3px;">ASG Offline Web Service</strong>`;
+          if (document.body) {
+            document.body.appendChild(badge);
+          }
+        }
+
+        if (badge) {
+          badge.setAttribute('style', `
+            position: fixed !important;
+            bottom: 12px !important;
+            left: 12px !important;
+            z-index: 99999999 !important;
+            background: #0f172a !important;
+            color: #f8fafc !important;
+            border: 1px solid rgba(99, 102, 241, 0.5) !important;
+            border-radius: 20px !important;
+            padding: 6px 14px !important;
+            font-size: 11px !important;
+            font-family: system-ui, -apple-system, sans-serif !important;
+            font-weight: 500 !important;
+            text-decoration: none !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            transform: none !important;
+            transition: none !important;
+          `);
+        }
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', renderBadge);
+      } else {
+        renderBadge();
+      }
+
+      // Anti-Tampering MutationObserver: Re-create and restore if deleted or hidden
+      try {
+        const observer = new MutationObserver(() => {
+          renderBadge();
+        });
+        if (document.body) {
+          observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+        }
+      } catch (e) {}
+
+      setInterval(renderBadge, 1500);
     }
 
     async queueOfflineRequest(url, method = 'POST', payload = {}) {

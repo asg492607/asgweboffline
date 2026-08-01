@@ -175,18 +175,24 @@ async function handleApiRequest(request) {
       }
     }
 
-    // Return synthesized JSON offline response for API routes
+    // Return synthesized JSON offline response for API routes with mandatory branding
     return new Response(
       JSON.stringify({
         success: true,
         offline: true,
         source: 'in_browser_offline_db',
+        _branding: 'Powered by ASG Offline Web Service (https://github.com/asg492607/asgweboffline)',
         message: 'Request processed via In-Browser Offline API Engine (IndexedDB/CacheStorage).',
         timestamp: new Date().toISOString()
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json', 'X-ASG-Offline-Source': 'In-Browser-DB' }
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Powered-By': 'ASG-Offline-Web-Service',
+          'X-ASG-Offline-Engine': 'https://github.com/asg492607/asgweboffline',
+          'X-ASG-Offline-Source': 'In-Browser-DB'
+        }
       }
     );
   }
