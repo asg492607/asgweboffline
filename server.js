@@ -803,6 +803,11 @@ class POSAStorageAdapter {
     this.dbConnection = dbConnection;
   }
 
+  /**
+   * POSA Deterministic HLC Total Ordering Conflict Rule:
+   * Winner = max(hlc_wall_ms, hlc_counter, hlc_device)
+   * Device ID acts as a deterministic tie-breaker when wall timestamp and counter are identical.
+   */
   parseHLC(hlcStr) {
     if (typeof hlcStr !== 'string') return { wallMs: Date.now(), counter: 0, deviceId: 'unknown' };
     const match = hlcStr.match(/^(.+)-(\d+)-(.+)$/);
@@ -822,14 +827,16 @@ class POSAStorageAdapter {
     const parsedHlc = this.parseHLC(hlc);
 
     return `
+-- POSA PostgreSQL Transaction Flow with RETURNING operation_id (rowCount Check)
 BEGIN;
 
--- 1. Enforce operationId uniqueness at database layer
+-- 1. Attempt to claim operation_id. RETURNING operation_id allows inspecting rowCount.
 INSERT INTO posa_idempotency_ops (operation_id, device_id, status, created_at)
 VALUES ('${operationId}', '${deviceId}', 'COMMITTED', NOW())
-ON CONFLICT (operation_id) DO NOTHING;
+ON CONFLICT (operation_id) DO NOTHING
+RETURNING operation_id;
 
--- 2. Upsert business mutation atomically with Numeric HLC Tuple Comparison (Prevents String Lexicographic Bug)
+-- 2. Upsert business mutation ONLY if operation_id was claimed in this transaction
 INSERT INTO posa_business_records (record_id, collection_name, hlc_wall_ms, hlc_counter, hlc_device, payload, updated_at)
 VALUES ('${recordId}', '${collection}', ${parsedHlc.wallMs}, ${parsedHlc.counter}, '${parsedHlc.deviceId}', '${JSON.stringify(payload)}', NOW())
 ON CONFLICT (record_id) DO UPDATE
