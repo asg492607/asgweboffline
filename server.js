@@ -735,28 +735,24 @@ function deepMerge(target, source) {
   return output;
 }
 
+function parseHLC(str) {
+  if (typeof str !== 'string') return null;
+  const match = str.match(/^(.+)-(\d+)-(.+)$/);
+  if (match) {
+    return {
+      wallIso: match[1],
+      counter: parseInt(match[2], 10) || 0,
+      devId: match[3]
+    };
+  }
+  return null;
+}
+
 function compareHLC(hlcA, hlcB) {
   if (!hlcA) return -1;
   if (!hlcB) return 1;
   if (hlcA === hlcB) return 0;
   try {
-    const parseHLC = (str) => {
-      const zIdx = str.indexOf('Z-');
-      if (zIdx !== -1) {
-        const wallIso = str.substring(0, zIdx + 1);
-        const rest = str.substring(zIdx + 2);
-        const dashIdx = rest.indexOf('-');
-        if (dashIdx !== -1) {
-          return {
-            wallIso,
-            counter: parseInt(rest.substring(0, dashIdx), 10) || 0,
-            devId: rest.substring(dashIdx + 1)
-          };
-        }
-      }
-      return null;
-    };
-
     const a = parseHLC(hlcA);
     const b = parseHLC(hlcB);
 
@@ -769,9 +765,9 @@ function compareHLC(hlcA, hlcB) {
       }
       return a.devId.localeCompare(b.devId);
     }
-    return hlcA.localeCompare(hlcB);
+    return String(hlcA).localeCompare(String(hlcB));
   } catch (e) {
-    return hlcA.localeCompare(hlcB);
+    return String(hlcA).localeCompare(String(hlcB));
   }
 }
 

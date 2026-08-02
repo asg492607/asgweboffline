@@ -732,30 +732,26 @@
       return output;
     }
 
+    parseHLC(str) {
+      if (typeof str !== 'string') return null;
+      const match = str.match(/^(.+)-(\d+)-(.+)$/);
+      if (match) {
+        return {
+          wallIso: match[1],
+          counter: parseInt(match[2], 10) || 0,
+          devId: match[3]
+        };
+      }
+      return null;
+    }
+
     compareHLC(hlcA, hlcB) {
       if (!hlcA) return -1;
       if (!hlcB) return 1;
       if (hlcA === hlcB) return 0;
       try {
-        const parseHLC = (str) => {
-          const zIdx = str.indexOf('Z-');
-          if (zIdx !== -1) {
-            const wallIso = str.substring(0, zIdx + 1);
-            const rest = str.substring(zIdx + 2);
-            const dashIdx = rest.indexOf('-');
-            if (dashIdx !== -1) {
-              return {
-                wallIso,
-                counter: parseInt(rest.substring(0, dashIdx), 10) || 0,
-                devId: rest.substring(dashIdx + 1)
-              };
-            }
-          }
-          return null;
-        };
-
-        const a = parseHLC(hlcA);
-        const b = parseHLC(hlcB);
+        const a = this.parseHLC(hlcA);
+        const b = this.parseHLC(hlcB);
 
         if (a && b) {
           if (a.wallIso !== b.wallIso) {
@@ -766,9 +762,9 @@
           }
           return a.devId.localeCompare(b.devId);
         }
-        return hlcA.localeCompare(hlcB);
+        return String(hlcA).localeCompare(String(hlcB));
       } catch (e) {
-        return hlcA.localeCompare(hlcB);
+        return String(hlcA).localeCompare(String(hlcB));
       }
     }
 
@@ -1104,6 +1100,7 @@
         }
       }
 
+      const PRIORITY_MAP = { HIGH: 3, MEDIUM: 2, LOW: 1 };
       const queueReady = [];
       for (const [id, degree] of inDegree.entries()) {
         if (degree === 0) queueReady.push(id);
@@ -1111,6 +1108,13 @@
 
       const sorted = [];
       while (queueReady.length > 0) {
+        // Sort ready operations deterministically by Priority (HIGH > MEDIUM > LOW)
+        queueReady.sort((aId, bId) => {
+          const pA = PRIORITY_MAP[nodes.get(aId)?.priority] || 2;
+          const pB = PRIORITY_MAP[nodes.get(bId)?.priority] || 2;
+          return pB - pA;
+        });
+
         const id = queueReady.shift();
         sorted.push(nodes.get(id));
 
