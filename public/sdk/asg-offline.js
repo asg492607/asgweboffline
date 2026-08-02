@@ -128,7 +128,21 @@
       }
     }
 
+    async requestPersistentStorage() {
+      if (navigator.storage && navigator.storage.persist) {
+        try {
+          const isPersisted = await navigator.storage.persist();
+          console.log(`[ASG Offline SDK] Storage Persistence Granted: ${isPersisted}`);
+          if (!isPersisted) {
+            console.warn('[ASG Offline SDK] Storage is unpersisted. Requesting persistent storage retention.');
+          }
+        } catch (e) {}
+      }
+    }
+
     async initIndexedDB() {
+      await this.requestPersistentStorage();
+
       return new Promise((resolve) => {
         const request = indexedDB.open('ASG_Offline_DB', 4);
 
@@ -155,8 +169,20 @@
           }
         };
 
+        request.onblocked = () => {
+          console.warn('[ASG Offline SDK] IndexedDB version upgrade blocked by active database connections in other tabs.');
+          this.showToast('⚠️ Storage Upgrade Pending', 'Please close other open tabs of this app to finish database migration.', 'warning');
+        };
+
         request.onsuccess = (e) => {
           this.db = e.target.result;
+
+          this.db.onversionchange = () => {
+            console.warn('[ASG Offline SDK] Closing IndexedDB connection due to upgrade in another tab.');
+            this.db.close();
+            this.showToast('🔄 Storage Updated', 'Database schema updated in another tab. Please refresh page.', 'info');
+          };
+
           console.log('[ASG Offline SDK] In-Browser Database (IndexedDB & POSA Engine v4) ready.');
           this.attachDbHelpers();
           this.initLocalSubnetSync();

@@ -16,7 +16,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// In-Memory Database for registered apps
+// In-Memory Database for registered apps with disk persistence
+const fs = require('fs');
+const APPS_FILE = path.join(__dirname, 'server_apps_store.json');
 const appsDb = new Map();
 
 // Seed initial default app for demo
@@ -49,6 +51,28 @@ appsDb.set('demo-app', {
   cacheVersion: 'v1.0.0',
   createdAt: new Date().toISOString()
 });
+
+// Load persisted apps configuration if exists
+try {
+  if (fs.existsSync(APPS_FILE)) {
+    const rawApps = fs.readFileSync(APPS_FILE, 'utf8');
+    const parsedApps = JSON.parse(rawApps);
+    if (Array.isArray(parsedApps)) {
+      parsedApps.forEach(([k, v]) => appsDb.set(k, v));
+      console.log(`[Apps Persistence] Loaded ${appsDb.size} app configurations from disk (${APPS_FILE}).`);
+    }
+  }
+} catch (e) {
+  console.warn('[Apps Persistence] Failed to load apps snapshot:', e.message);
+}
+
+function saveAppsPersistence() {
+  try {
+    fs.writeFileSync(APPS_FILE, JSON.stringify(Array.from(appsDb.entries()), null, 2), 'utf8');
+  } catch (e) {
+    console.warn('[Apps Persistence] Failed to snapshot apps to disk:', e.message);
+  }
+}
 
 // Telemetry store
 const telemetryStore = [];
@@ -123,6 +147,7 @@ app.post('/api/v1/apps', (req, res) => {
   };
 
   appsDb.set(appId, updatedApp);
+  saveAppsPersistence();
 
   res.json({
     success: true,
@@ -190,6 +215,7 @@ app.post('/api/v1/analyze-and-generate', (req, res) => {
   };
 
   appsDb.set(appId, appConfig);
+  saveAppsPersistence();
 
   const host = process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
 
@@ -653,7 +679,6 @@ app.post('/api/v1/alerts', (req, res) => {
 // ==================== POSA (PERSISTENT OFFLINE SYNCHRONIZATION ALGORITHM) APIS ====================
 
 const crypto = require('crypto');
-const fs = require('fs');
 
 // Server-side POSA Storage and Logs
 const PERSISTENCE_FILE = path.join(__dirname, 'posa_records_store.json');
