@@ -1,5 +1,5 @@
 /**
- * ASG All-In-One Generator Dashboard Interactivity & Sandbox Testing
+ * ASG All-In-One Generator & Real Data Operations Manager
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Auto-trigger initial code generation on page load
   generateCodeForUrl('https://my-awesome-site.com', 'https://api.my-awesome-site.com');
+
+  // Load and render real IndexedDB records on page load
+  setTimeout(() => loadAndRenderRealRecords(), 500);
 
   // URL Generator Form Submission
   const urlGenForm = document.getElementById('url-generator-form');
@@ -68,7 +71,6 @@ document.addEventListener('DOMContentLoaded', () => {
       throw new Error('Network returned non-200 status');
     } catch (err) {
       console.warn('[Offline Engine] Server API unreachable offline, using client-side offline generator fallback.');
-      // Client-side offline fallback generator (Works 100% offline without server!)
       const offlineGenerated = generateOfflineCodeLocally(frontendUrl, backendApiUrl);
       generatedSnippets = offlineGenerated;
       
@@ -80,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Client-side Offline Code Generator Fallback (Runs 100% offline in browser)
+  // Client-side Offline Code Generator Fallback
   function generateOfflineCodeLocally(frontendUrl, backendApiUrl) {
     let cleanUrl = frontendUrl || 'https://my-awesome-site.com';
     let domain = 'my-awesome-site.com';
@@ -200,7 +202,7 @@ onMounted(() => {
 </script>`;
 
     const standaloneSwCode = `/** Custom Service Worker for ${domain} */
-const CACHE_NAME = '${appId}-v2';
+const CACHE_NAME = '${appId}-v3';
 const PRECACHE = ['/', '/index.html', '/styles.css'];
 
 self.addEventListener('install', (e) => e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(PRECACHE))));
@@ -266,79 +268,119 @@ self.addEventListener('fetch', (e) => {
     });
   });
 
-  // ==================== LIVE INTERACTIVE SANDBOX TESTING HANDLERS ====================
-  const sandboxOutput = document.getElementById('sandbox-output');
-  function logToSandbox(title, data) {
-    if (sandboxOutput) {
-      const timestamp = new Date().toLocaleTimeString();
-      const formatted = `[${timestamp}] ${title}\n` + JSON.stringify(data, null, 2) + '\n\n';
-      sandboxOutput.innerText = formatted + sandboxOutput.innerText;
+  // ==================== REAL DATA OPERATIONS HANDLERS ====================
+  const realRecordForm = document.getElementById('real-record-form');
+  if (realRecordForm) {
+    realRecordForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const titleInput = document.getElementById('rec-title-input');
+      const priceInput = document.getElementById('rec-price-input');
+      const title = titleInput ? titleInput.value.trim() : 'Record';
+      const price = priceInput ? Number(priceInput.value) : 99;
+
+      if (!title) return;
+
+      const recordId = 'rec_' + Math.random().toString(36).substring(2, 8);
+      const recordData = {
+        id: recordId,
+        title,
+        price,
+        createdAt: new Date().toISOString()
+      };
+
+      if (window.offlineApp) {
+        const saved = await window.offlineApp.save('orders', recordData);
+        lastSavedRecordId = recordId;
+        showNotification('Record Saved', `'${title}' stored in IndexedDB (Auto-Sync Queue Active)`, 'success');
+        titleInput.value = '';
+        await loadAndRenderRealRecords();
+      }
+    });
+  }
+
+  // Real Update Button
+  const btnRealUpdate = document.getElementById('btn-real-update');
+  if (btnRealUpdate) {
+    btnRealUpdate.addEventListener('click', async () => {
+      if (!lastSavedRecordId) {
+        showNotification('No Active Record', 'Please create a record first before updating.', 'info');
+        return;
+      }
+      if (window.offlineApp) {
+        await window.offlineApp.update('orders', lastSavedRecordId, {
+          title: 'Enterprise Laptop (Updated)',
+          price: 1499,
+          updatedAt: new Date().toISOString()
+        });
+        showNotification('Record Updated', `Updated ID '${lastSavedRecordId}' with new price ($1499)`, 'success');
+        await loadAndRenderRealRecords();
+      }
+    });
+  }
+
+  // Real Delete Button
+  const btnRealDelete = document.getElementById('btn-real-delete');
+  if (btnRealDelete) {
+    btnRealDelete.addEventListener('click', async () => {
+      if (!lastSavedRecordId) {
+        showNotification('No Active Record', 'Please create a record first before deleting.', 'info');
+        return;
+      }
+      if (window.offlineApp) {
+        await window.offlineApp.delete('orders', lastSavedRecordId);
+        showNotification('Record Deleted', `Deleted ID '${lastSavedRecordId}' from database`, 'info');
+        lastSavedRecordId = null;
+        await loadAndRenderRealRecords();
+      }
+    });
+  }
+
+  // Load and Render Real Records into Table
+  async function loadAndRenderRealRecords() {
+    const tableBody = document.getElementById('real-records-table-body');
+    if (!tableBody || !window.offlineApp) return;
+
+    try {
+      const records = await window.offlineApp.find('orders');
+      if (!records || records.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="5" style="padding: 16px; text-align: center; color: var(--text-muted);">
+              No records found in local database. Fill out the form above and click "➕ Save Record" to create one!
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const isOnline = navigator.onLine;
+      tableBody.innerHTML = records.map(r => {
+        const id = r.id || r.recordId || 'rec_101';
+        const title = r.title || r.name || r.item || 'Item Record';
+        const price = r.price ? `$${r.price}` : 'N/A';
+        const dateStr = r.updatedAt ? new Date(r.updatedAt).toLocaleTimeString() : new Date().toLocaleTimeString();
+        const statusBadge = isOnline 
+          ? `<span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">🟢 Synced / Ready</span>`
+          : `<span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 0.75rem;">📡 Saved in IndexedDB</span>`;
+
+        return `
+          <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
+            <td style="padding: 10px 14px; font-family: monospace; color: #38bdf8;">${id}</td>
+            <td style="padding: 10px 14px; font-weight: 600;">${title}</td>
+            <td style="padding: 10px 14px; color: #34d399;">${price}</td>
+            <td style="padding: 10px 14px;">${statusBadge}</td>
+            <td style="padding: 10px 14px; color: var(--text-muted);">${dateStr}</td>
+          </tr>
+        `;
+      }).join('');
+    } catch (err) {
+      console.warn('Could not render records:', err);
     }
   }
 
-  // 1. Test Save Record
-  const btnSave = document.getElementById('btn-test-save');
-  if (btnSave) {
-    btnSave.addEventListener('click', async () => {
-      if (window.offlineApp) {
-        const item = { title: 'Offline Item ' + Math.floor(Math.random() * 1000), price: 99, createdAt: new Date().toISOString() };
-        const result = await window.offlineApp.save('test_collection', item);
-        lastSavedRecordId = result ? (result.id || result.operationId) : null;
-        logToSandbox('✅ window.offlineApp.save() executed:', result);
-        showNotification('Record Saved Offline', 'Written to IndexedDB with POSA Queue', 'success');
-      }
-    });
-  }
-
-  // 2. Test Update Record
-  const btnUpdate = document.getElementById('btn-test-update');
-  if (btnUpdate) {
-    btnUpdate.addEventListener('click', async () => {
-      if (window.offlineApp) {
-        const targetId = lastSavedRecordId || 'rec_101';
-        const result = await window.offlineApp.update('test_collection', targetId, { status: 'updated_offline', price: 120 });
-        logToSandbox('✏️ window.offlineApp.update() executed for ID ' + targetId + ':', result);
-        showNotification('Record Updated Offline', 'Delta payload queued', 'info');
-      }
-    });
-  }
-
-  // 3. Test Delete Record
-  const btnDelete = document.getElementById('btn-test-delete');
-  if (btnDelete) {
-    btnDelete.addEventListener('click', async () => {
-      if (window.offlineApp) {
-        const targetId = lastSavedRecordId || 'rec_101';
-        const result = await window.offlineApp.delete('test_collection', targetId);
-        logToSandbox('🗑️ window.offlineApp.delete() executed for ID ' + targetId + ':', result);
-        showNotification('Record Deleted Offline', 'High priority POSA delete queued', 'info');
-      }
-    });
-  }
-
-  // 4. Test Find Local Records
-  const btnFind = document.getElementById('btn-test-find');
-  if (btnFind) {
-    btnFind.addEventListener('click', async () => {
-      if (window.offlineApp) {
-        const records = await window.offlineApp.find('test_collection');
-        logToSandbox('🔍 window.offlineApp.find() retrieved ' + records.length + ' record(s):', records);
-        showNotification('Local Records Queried', `Found ${records.length} items in IndexedDB`, 'success');
-      }
-    });
-  }
-
-  // 5. Test Offline API Sync POST
-  const btnSyncPost = document.getElementById('btn-test-syncpost');
-  if (btnSyncPost) {
-    btnSyncPost.addEventListener('click', async () => {
-      if (window.offlineApp) {
-        const result = await window.offlineApp.syncPost('/api/v1/apps', { appId: 'sandbox-app', appName: 'Sandbox Test App' });
-        logToSandbox('⚡ window.offlineApp.syncPost() executed:', result);
-        showNotification('API Request Processed', result.offlineQueued ? 'Queued offline for background sync' : 'Sent to server', 'success');
-      }
-    });
-  }
+  // Auto reload table when online/offline changes
+  window.addEventListener('online', () => setTimeout(loadAndRenderRealRecords, 1000));
+  window.addEventListener('offline', () => setTimeout(loadAndRenderRealRecords, 500));
 
   // Notification Toast Helper
   function showNotification(title, message, type = 'info') {
