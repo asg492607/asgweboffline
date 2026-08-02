@@ -1,7 +1,8 @@
 {
   "formatVersion": 1,
-  "generation": 42,
-  "createdAt": "2026-08-02T17:44:07.183Z",
+  "generation": 4042,
+  "createdAt": "2026-08-02T17:58:41.142Z",
+  "checksum": "b9d3d7bb99abaf8a06e4101bab7452026c6aa4252ed3f1db7785e0ac3eac53a9",
   "records": [
     [
       "user_records:election_rec_1",
@@ -14,12 +15,58 @@
         },
         "hlc": "2026-08-02T17:44:00.000Z-0001-dev_election"
       }
+    ],
+    [
+      "user_records:storm_rec_001",
+      {
+        "collection": "user_records",
+        "recordId": "storm_rec_001",
+        "payload": {
+          "id": "storm_rec_001",
+          "title": "Storm Invariant Test",
+          "balance": 50000
+        },
+        "updatedAt": "2026-08-02T17:58:39.578Z",
+        "hlc": "2026-08-02T17:58:39.502Z-0001-dev_storm_tester",
+        "deviceId": "dev_storm_tester"
+      }
     ]
   ],
   "idempotencyKeys": [
     [
       "election_op_1",
       "COMMITTED"
+    ],
+    [
+      "storm_op_1785692764549",
+      {
+        "status": "SYNCED",
+        "key": "user_records:storm_rec_001"
+      }
+    ],
+    [
+      "storm_op_1785693483975",
+      {
+        "status": "SYNCED",
+        "key": "user_records:storm_rec_001",
+        "winner": "client"
+      }
+    ],
+    [
+      "storm_op_1785693500245",
+      {
+        "status": "SYNCED",
+        "key": "user_records:storm_rec_001",
+        "winner": "client"
+      }
+    ],
+    [
+      "storm_op_1785693519502",
+      {
+        "status": "SYNCED",
+        "key": "user_records:storm_rec_001",
+        "winner": "client"
+      }
     ]
   ]
 }

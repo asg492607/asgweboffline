@@ -1014,6 +1014,7 @@ app.post('/api/v1/posa/sync', (req, res) => {
   }
 
   const syncedIds = [];
+  const idempotentIds = [];
   const deadLetterOps = [];
   const conflictsResolved = [];
   let idempotentHitsCount = 0;
@@ -1028,7 +1029,7 @@ app.post('/api/v1/posa/sync', (req, res) => {
     // 1. Server-Side Idempotency Check (Exactly-Once Semantics)
     if (posaProcessedOpsDb.has(operationId)) {
       idempotentHitsCount++;
-      syncedIds.push(operationId);
+      idempotentIds.push(operationId);
       continue;
     }
 
@@ -1169,6 +1170,7 @@ app.post('/api/v1/posa/sync', (req, res) => {
     success: true,
     appId: appId || 'demo-app',
     syncedOperationIds: syncedIds,
+    idempotentOperationIds: idempotentIds,
     deadLetterOperations: deadLetterOps,
     idempotentHitsCount,
     conflictsResolved: conflictsResolved.length,
