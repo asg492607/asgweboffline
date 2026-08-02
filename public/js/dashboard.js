@@ -298,7 +298,54 @@ self.addEventListener('fetch', (e) => {
     });
   }
 
-  // Real Update Button
+  // ==================== ROUTE MODE TEST HANDLERS ====================
+  const btnModeLocalSafe = document.getElementById('btn-mode-local-safe');
+  if (btnModeLocalSafe) {
+    btnModeLocalSafe.addEventListener('click', async () => {
+      if (window.offlineApp) {
+        const res = await window.offlineApp.fetch('/api/products', {
+          method: 'POST',
+          body: JSON.stringify({ name: 'Product ' + Math.floor(Math.random() * 100), price: 99 })
+        });
+        const data = await res.json();
+        showNotification('LOCAL_SAFE Route Executed', `Status ${res.status}: ${data.message || 'Applied locally'}`, 'success');
+        await loadAndRenderRealRecords();
+      }
+    });
+  }
+
+  const btnModeDeferred = document.getElementById('btn-mode-deferred');
+  if (btnModeDeferred) {
+    btnModeDeferred.addEventListener('click', async () => {
+      if (window.offlineApp) {
+        const res = await window.offlineApp.fetch('/api/orders', {
+          method: 'POST',
+          body: JSON.stringify({ item: 'Deferred Order #' + Math.floor(Math.random() * 100), price: 499 })
+        });
+        const data = await res.json();
+        showNotification('DEFERRED Route Executed', `Status ${res.status}: ${data.message || 'Queued offline for server validation'}`, 'info');
+        await loadAndRenderRealRecords();
+      }
+    });
+  }
+
+  const btnModeOnlineReq = document.getElementById('btn-mode-online-req');
+  if (btnModeOnlineReq) {
+    btnModeOnlineReq.addEventListener('click', async () => {
+      if (window.offlineApp) {
+        const res = await window.offlineApp.fetch('/api/payment', {
+          method: 'POST',
+          body: JSON.stringify({ amount: 99 })
+        });
+        const data = await res.json();
+        if (res.status === 503 || data.offlineBlocked) {
+          showNotification('ONLINE_REQUIRED Blocked Offline', 'Payments/OTP/External APIs require active internet connection.', 'error');
+        } else {
+          showNotification('ONLINE_REQUIRED Executed Online', 'Payment processed on server.', 'success');
+        }
+      }
+    });
+  }
   const btnRealUpdate = document.getElementById('btn-real-update');
   if (btnRealUpdate) {
     btnRealUpdate.addEventListener('click', async () => {

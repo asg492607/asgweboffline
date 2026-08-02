@@ -29,6 +29,12 @@
       this.statusListeners = [];
       this.queueListeners = [];
       this.isSyncing = false;
+      this.registeredRoutes = new Map();
+
+      // Default registered routes for demonstration
+      this.registerRoute({ method: 'POST', path: '/api/products', mode: 'LOCAL_SAFE', collection: 'products' });
+      this.registerRoute({ method: 'POST', path: '/api/orders', mode: 'DEFERRED', collection: 'orders' });
+      this.registerRoute({ method: 'POST', path: '/api/payment', mode: 'ONLINE_REQUIRED', collection: 'payments' });
 
       this.init();
     }
@@ -1492,31 +1498,125 @@
       }
     }
 
-    /** Smart Fetch Wrapper: Transparently handles network errors & queues mutating requests when offline */
+    /**
+     * LAYER 2: ASG Offline API Runtime Route Registrar
+     * Modes:
+     * - 'LOCAL_SAFE': Executed 100% offline against IndexedDB replica (CRUD, notes, forms, cart).
+     * - 'DEFERRED': User action queued offline, final execution waits for server validation (Orders).
+     * - 'ONLINE_REQUIRED': Refuses execution offline with HTTP 503 (Payments, OTP, live external APIs).
+     */
+    registerRoute(routeConfig) {
+      if (!routeConfig || !routeConfig.path) return;
+      const method = (routeConfig.method || 'GET').toUpperCase();
+      const key = `${method}:${routeConfig.path}`;
+      this.registeredRoutes.set(key, {
+        method,
+        path: routeConfig.path,
+        mode: routeConfig.mode || 'LOCAL_SAFE',
+        collection: routeConfig.collection || 'records'
+      });
+      console.log(`[ASG API Runtime] Registered Route [${method}] ${routeConfig.path} (Mode: ${routeConfig.mode || 'LOCAL_SAFE'})`);
+    }
+
+    matchRoute(method, path) {
+      const key = `${method.toUpperCase()}:${path}`;
+      if (this.registeredRoutes.has(key)) return this.registeredRoutes.get(key);
+
+      for (const [routeKey, config] of this.registeredRoutes.entries()) {
+        const [rMethod, rPath] = routeKey.split(':');
+        if (rMethod === method.toUpperCase()) {
+          const regexPattern = new RegExp('^' + rPath.replace(/:[a-zA-Z0-9_]+/g, '[^/]+') + '$');
+          if (regexPattern.test(path)) return config;
+        }
+      }
+      return null;
+    }
+
+    /** Layer 2 Offline API Runtime & Smart Fetch Interceptor */
     async fetch(url, options = {}) {
       const method = (options.method || 'GET').toUpperCase();
+      let pathname = url;
+      try {
+        pathname = new URL(url, window.location.origin).pathname;
+      } catch (e) {}
+
+      const matchedRoute = this.matchRoute(method, pathname);
+
       if (this.isOnline) {
         try {
-          return await window.fetch(url, options);
+          const response = await window.fetch(url, options);
+          if (response.ok || response.status < 400) return response;
         } catch (err) {
-          console.warn(`[ASG Offline SDK] Smart fetch failed for ${method} ${url}, switching to offline fallback.`);
+          console.warn(`[ASG Offline Engine] Network request failed for ${method} ${pathname}, activating Layer 2 Offline API Runtime.`);
         }
       }
 
-      if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
-        let payload = {};
-        if (options.body) {
-          try { payload = typeof options.body === 'string' ? JSON.parse(options.body) : options.body; } catch (e) {}
-        }
-        await this.queueOfflineRequest(url, method, payload);
-        const jsonRes = { success: true, offlineQueued: true, message: `${method} request queued offline.` };
-        return new Response(JSON.stringify(jsonRes), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json', 'X-ASG-Offline': 'true' }
+      // Offline API Runtime Mode Rules
+      const mode = matchedRoute ? matchedRoute.mode : (method === 'GET' ? 'LOCAL_SAFE' : 'LOCAL_SAFE');
+      const collection = matchedRoute ? matchedRoute.collection : (pathname.split('/')[2] || 'orders');
+
+      // Rule A: ONLINE_REQUIRED mode cannot operate offline
+      if (!this.isOnline && mode === 'ONLINE_REQUIRED') {
+        this.showToast('⛔ Action Requires Internet', 'Payment, OTP, or Live Third-Party API calls cannot execute offline.', 'warning');
+        return new Response(JSON.stringify({
+          success: false,
+          offlineBlocked: true,
+          mode: 'ONLINE_REQUIRED',
+          error: 'ONLINE_REQUIRED: This action requires an active server connection.'
+        }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json', 'X-ASG-Runtime-Mode': 'ONLINE_REQUIRED' }
         });
-      } else {
-        return window.fetch(url, options);
       }
+
+      // Rule B: GET queries served from Local IndexedDB Replica
+      if (method === 'GET') {
+        const localRecords = await this.find(collection);
+        return new Response(JSON.stringify({
+          success: true,
+          offline: true,
+          source: 'local_indexeddb_replica',
+          records: localRecords,
+          data: localRecords,
+          total: localRecords.length,
+          timestamp: new Date().toISOString()
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'X-ASG-Runtime-Source': 'IndexedDB-Replica' }
+        });
+      }
+
+      // Rule C: LOCAL_SAFE and DEFERRED mutating operations
+      let payload = {};
+      if (options.body) {
+        try { payload = typeof options.body === 'string' ? JSON.parse(options.body) : options.body; } catch (e) {}
+      }
+
+      const recordId = payload.id || pathname.split('/').pop() || ('rec_' + Math.random().toString(36).substring(2, 8));
+      payload.id = recordId;
+
+      if (method === 'POST' || method === 'PUT') {
+        await this.posaSave(collection, payload, { id: recordId });
+      } else if (method === 'DELETE') {
+        await this.posaDelete(collection, recordId);
+      }
+
+      const httpStatus = mode === 'DEFERRED' ? 202 : 200;
+      const message = mode === 'DEFERRED'
+        ? 'Operation queued offline. Pending server validation upon reconnection.'
+        : 'Operation applied locally to IndexedDB & POSA queue.';
+
+      return new Response(JSON.stringify({
+        success: true,
+        offlineQueued: true,
+        mode,
+        record: payload,
+        message,
+        timestamp: new Date().toISOString()
+      }), {
+        status: httpStatus,
+        headers: { 'Content-Type': 'application/json', 'X-ASG-Runtime-Mode': mode }
+      });
     }
   }
 

@@ -16,11 +16,16 @@
   </script>
 
   <script>
-    // Real Client Setup & API Wrappers
+    // Real Client Setup & API Runtime Route Classification
     window.addEventListener('DOMContentLoaded', () => {
-      console.log('⚡ ASG Offline Engine active for this web application');
+      console.log('⚡ ASG 3-Layer Platform Architecture Active');
 
       if (window.ASGOffline) {
+        // Register Route Classification Modes (LOCAL_SAFE | DEFERRED | ONLINE_REQUIRED)
+        window.ASGOffline.registerRoute({ method: 'POST', path: '/api/products', mode: 'LOCAL_SAFE', collection: 'products' });
+        window.ASGOffline.registerRoute({ method: 'POST', path: '/api/orders', mode: 'DEFERRED', collection: 'orders' });
+        window.ASGOffline.registerRoute({ method: 'POST', path: '/api/payment', mode: 'ONLINE_REQUIRED', collection: 'payments' });
+
         window.ASGOffline.onStatusChange((isOnline) => {
           const statusLabel = document.getElementById('network-status-label');
           if (statusLabel) {
@@ -54,7 +59,7 @@
       <div class="brand-icon">📡</div>
       <div>
         <span class="brand-title">ASG Offline Web Service</span>
-        <span class="brand-badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; margin-left: 8px;">⚡ Production Offline Engine</span>
+        <span class="brand-badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; margin-left: 8px;">⚡ 3-Layer Platform Engine</span>
       </div>
     </div>
 
@@ -75,7 +80,7 @@
       </p>
     </section>
 
-    <!-- ⚡ Real Data Operations Manager -->
+    <!-- ⚡ Real Data Operations Manager & API Route Classifier -->
     <div class="glass-card" style="margin-bottom: 2.5rem; border-color: rgba(99, 102, 241, 0.4); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.15);">
       <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
         <span style="font-size: 1.2rem; font-weight: 700; color: #818cf8;">⚡ Live Application Data Manager</span>
@@ -84,6 +89,22 @@
       <p class="card-subtitle" style="margin-bottom: 1.25rem;">
         All operations run instantly in browser IndexedDB database when offline, and automatically sync to the server when online.
       </p>
+
+      <!-- API Route Classification Modes Tester -->
+      <div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.25rem;">
+        <div style="font-size: 0.8rem; color: #818cf8; font-weight: 700; margin-bottom: 8px;">TEST ROUTE CLASSIFICATION MODES (ASG API Runtime Layer):</div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="btn-mode-local-safe" class="btn btn-secondary" style="background: rgba(16, 185, 129, 0.2); border: 1px solid var(--accent-emerald); color: #34d399; font-size: 0.8rem;">
+            🟢 LOCAL_SAFE (/api/products)
+          </button>
+          <button id="btn-mode-deferred" class="btn btn-secondary" style="background: rgba(245, 158, 11, 0.2); border: 1px solid var(--accent-amber); color: #fbbf24; font-size: 0.8rem;">
+            🟡 DEFERRED (/api/orders)
+          </button>
+          <button id="btn-mode-online-req" class="btn btn-secondary" style="background: rgba(244, 63, 94, 0.2); border: 1px solid var(--accent-rose); color: #fb7185; font-size: 0.8rem;">
+            🔴 ONLINE_REQUIRED (/api/payment)
+          </button>
+        </div>
+      </div>
 
       <!-- Real Record Entry Form -->
       <form id="real-record-form" style="display: flex; gap: 10px; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: flex-end;">
