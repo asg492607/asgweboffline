@@ -66,12 +66,16 @@ try {
   console.warn('[Apps Persistence] Failed to load apps snapshot:', e.message);
 }
 
+let appsSaveTimer = null;
 function saveAppsPersistence() {
-  try {
-    fs.writeFileSync(APPS_FILE, JSON.stringify(Array.from(appsDb.entries()), null, 2), 'utf8');
-  } catch (e) {
-    console.warn('[Apps Persistence] Failed to snapshot apps to disk:', e.message);
-  }
+  if (appsSaveTimer) clearTimeout(appsSaveTimer);
+  appsSaveTimer = setTimeout(async () => {
+    try {
+      await fs.promises.writeFile(APPS_FILE, JSON.stringify(Array.from(appsDb.entries()), null, 2), 'utf8');
+    } catch (e) {
+      console.warn('[Apps Persistence] Failed async snapshot to disk:', e.message);
+    }
+  }, 300);
 }
 
 // Telemetry store
@@ -700,14 +704,17 @@ try {
   console.warn('[POSA Storage] Failed to load offline disk persistence:', e.message);
 }
 
-// Function to snapshot POSA storage to disk (enables server offline durability)
+let posaSaveTimer = null;
 function savePOSAPersistence() {
-  try {
-    const data = JSON.stringify(Array.from(posaRecordsDb.entries()), null, 2);
-    fs.writeFileSync(PERSISTENCE_FILE, data, 'utf8');
-  } catch (e) {
-    console.warn('[POSA Storage] Failed to save offline snapshot to disk:', e.message);
-  }
+  if (posaSaveTimer) clearTimeout(posaSaveTimer);
+  posaSaveTimer = setTimeout(async () => {
+    try {
+      const data = JSON.stringify(Array.from(posaRecordsDb.entries()), null, 2);
+      await fs.promises.writeFile(PERSISTENCE_FILE, data, 'utf8');
+    } catch (e) {
+      console.warn('[POSA Storage] Failed async snapshot to disk:', e.message);
+    }
+  }, 300);
 }
 
 // GET POSA Engine & Server Health Ping (Used by Adaptive Sync Engine - ASE)

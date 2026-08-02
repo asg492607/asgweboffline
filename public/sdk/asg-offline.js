@@ -1136,43 +1136,51 @@
           return;
         }
 
-        // Send Batch to POSA Server Sync Endpoint
-        const response = await fetch(`${this.serverUrl}/api/v1/posa/sync`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            appId: this.appId,
-            deviceId: this.getDeviceId(),
-            conflictStrategy: this.conflictStrategy || 'LAST_WRITE_WINS',
-            operations: itemsToSync
-          })
-        });
+        // Chunk large sync queues into batches of 100 operations to prevent payload limits
+        const BATCH_SIZE = 100;
+        let totalSynced = 0;
 
-        const syncResult = await response.json();
+        for (let i = 0; i < itemsToSync.length; i += BATCH_SIZE) {
+          const chunk = itemsToSync.slice(i, i + BATCH_SIZE);
 
-        if (syncResult.success) {
-          // Remove processed items from posa_queue
-          const processedIds = new Set(syncResult.syncedOperationIds || itemsToSync.map(i => i.operationId));
-          const tx = this.db.transaction(['posa_queue'], 'readwrite');
-          const store = tx.objectStore('posa_queue');
-          
-          for (const opId of processedIds) {
-            store.delete(opId);
+          const response = await fetch(`${this.serverUrl}/api/v1/posa/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              appId: this.appId,
+              deviceId: this.getDeviceId(),
+              conflictStrategy: this.conflictStrategy || 'LAST_WRITE_WINS',
+              operations: chunk
+            })
+          });
+
+          const syncResult = await response.json();
+
+          if (syncResult.success) {
+            const processedIds = new Set(syncResult.syncedOperationIds || chunk.map(item => item.operationId));
+            const tx = this.db.transaction(['posa_queue'], 'readwrite');
+            const store = tx.objectStore('posa_queue');
+            
+            for (const opId of processedIds) {
+              store.delete(opId);
+            }
+            totalSynced += processedIds.size;
+          } else {
+            console.warn('[POSA Engine] Sync chunk failed, applying exponential backoff:', syncResult.error);
+            const tx = this.db.transaction(['posa_queue'], 'readwrite');
+            const store = tx.objectStore('posa_queue');
+            for (const item of chunk) {
+              item.retryCount = (item.retryCount || 0) + 1;
+              item.lastRetryTimestamp = new Date().toISOString();
+              store.put(item);
+            }
           }
+        }
 
-          console.log(`[POSA Engine] ✅ Successfully synchronized ${processedIds.size} DAG operations!`);
-          this.showToast('✅ POSA Sync Complete', `Successfully synced ${processedIds.size} DAG operations (${savingsPct}% payload saved).`, 'success');
-          this.sendTelemetry('POSA_SYNC_SUCCESS', { syncedOps: processedIds.size, savingsPct });
-        } else {
-          console.warn('[POSA Engine] Sync response indicated retry required:', syncResult.error);
-          // Increment retry counts and update lastRetryTimestamp
-          const tx = this.db.transaction(['posa_queue'], 'readwrite');
-          const store = tx.objectStore('posa_queue');
-          for (const item of itemsToSync) {
-            item.retryCount = (item.retryCount || 0) + 1;
-            item.lastRetryTimestamp = new Date().toISOString();
-            store.put(item);
-          }
+        if (totalSynced > 0) {
+          console.log(`[POSA Engine] ✅ Successfully synchronized ${totalSynced} DAG operations across batch chunks!`);
+          this.showToast('✅ POSA Sync Complete', `Successfully synced ${totalSynced} DAG operations (${savingsPct}% payload saved).`, 'success');
+          this.sendTelemetry('POSA_SYNC_SUCCESS', { syncedOps: totalSynced, savingsPct });
         }
       } catch (err) {
         console.error('[POSA Engine] Error during execution cycle:', err);

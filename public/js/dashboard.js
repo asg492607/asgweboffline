@@ -591,7 +591,7 @@ function initPOSADashboard() {
 }
 
 async function updatePOSADashboardView() {
-  if (!window.ASGOffline) return;
+  if (!window.ASGOffline || document.hidden) return;
 
   try {
     // 1. Fetch Local POSA Queue & DAG
