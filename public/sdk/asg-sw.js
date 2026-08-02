@@ -172,6 +172,32 @@ async function networkFirst(request) {
   }
 }
 
+// Helper: Network-Only strategy (Option A: Data/API Sync Only - Web page uses network, API syncs offline)
+async function networkOnly(request) {
+  try {
+    return await fetch(request.clone());
+  } catch (err) {
+    if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
+      return new Response(OFFLINE_FALLBACK_HTML, { headers: { 'Content-Type': 'text/html' } });
+    }
+    return new Response(JSON.stringify({ error: 'Network unavailable (Network-Only mode)', offline: true }), {
+      status: 504,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// Helper: Cache-Only strategy (Pure Offline Mode)
+async function cacheOnly(request) {
+  const cachedResponse = await caches.match(request);
+  if (cachedResponse) return cachedResponse;
+
+  if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
+    return new Response(OFFLINE_FALLBACK_HTML, { headers: { 'Content-Type': 'text/html' } });
+  }
+  return new Response('', { status: 404, statusText: 'Resource Not In Cache' });
+}
+
 // Helper: Handle API requests with Network-First and Offline JSON Fallback
 async function handleApiRequest(request) {
   try {
@@ -236,19 +262,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle static assets with Cache-First
-  if (isStaticAsset(url)) {
+  // Handle static assets (use Cache-First unless Network-Only is selected)
+  if (isStaticAsset(url) && DEFAULT_STRATEGY !== 'network-only') {
     event.respondWith(cacheFirst(request));
     return;
   }
 
-  // Handle general requests according to default strategy
+  // Handle general requests according to active strategy
   if (DEFAULT_STRATEGY === 'cache-first') {
     event.respondWith(cacheFirst(request));
   } else if (DEFAULT_STRATEGY === 'network-first') {
     event.respondWith(networkFirst(request));
+  } else if (DEFAULT_STRATEGY === 'network-only') {
+    event.respondWith(networkOnly(request));
+  } else if (DEFAULT_STRATEGY === 'cache-only') {
+    event.respondWith(cacheOnly(request));
   } else {
-    // Default: stale-while-revalidate
+    // Default: stale-while-revalidate (Option B: Full Offline PWA)
     event.respondWith(staleWhileRevalidate(request));
   }
 });
