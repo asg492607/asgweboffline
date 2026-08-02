@@ -22,19 +22,37 @@
     const queueCount = Vue && Vue.ref ? Vue.ref(0) : { value: 0 };
 
     if (typeof window !== 'undefined') {
+      let unSubStatus = null;
+      let unSubQueue = null;
+
       const checkSdk = () => {
         if (window.ASGOffline) {
           isOnline.value = window.ASGOffline.isOnline;
-          window.ASGOffline.onStatusChange((status) => {
-            isOnline.value = status;
-          });
+          if (window.ASGOffline.onStatusChange) {
+            unSubStatus = window.ASGOffline.onStatusChange((status) => { isOnline.value = status; });
+          }
+          if (window.ASGOffline.onQueueChange) {
+            unSubQueue = window.ASGOffline.onQueueChange((count) => { queueCount.value = count; });
+          }
+          if (window.ASGOffline.getPOSAQueue) {
+            window.ASGOffline.getPOSAQueue().then(q => { queueCount.value = q ? q.length : 0; });
+          }
         }
+      };
+
+      const cleanup = () => {
+        if (typeof unSubStatus === 'function') unSubStatus();
+        if (typeof unSubQueue === 'function') unSubQueue();
       };
 
       if (Vue && Vue.onMounted) {
         Vue.onMounted(checkSdk);
       } else {
         checkSdk();
+      }
+
+      if (Vue && Vue.onUnmounted) {
+        Vue.onUnmounted(cleanup);
       }
     }
 
