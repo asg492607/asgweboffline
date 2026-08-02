@@ -729,18 +729,53 @@ function validatePOSABusinessInvariants(op, existingRecord, appSecret = null) {
   return { valid: true };
 }
 
-// Load persisted offline records from local disk if available
+const IDEMPOTENCY_FILE = path.join(__dirname, 'posa_processed_ops_store.json');
+
+// Load persisted offline records & idempotency store from local disk if available
 try {
   if (fs.existsSync(PERSISTENCE_FILE)) {
     const rawData = fs.readFileSync(PERSISTENCE_FILE, 'utf8');
     const parsed = JSON.parse(rawData);
     if (Array.isArray(parsed)) {
       parsed.forEach(([key, val]) => posaRecordsDb.set(key, val));
-      console.log(`[POSA Storage] Loaded ${posaRecordsDb.size} offline records from local disk persistence (${PERSISTENCE_FILE}).`);
+      console.log(`[POSA Storage] Loaded ${posaRecordsDb.size} offline records from local disk persistence.`);
+    }
+  }
+  if (fs.existsSync(IDEMPOTENCY_FILE)) {
+    const rawOps = fs.readFileSync(IDEMPOTENCY_FILE, 'utf8');
+    const parsedOps = JSON.parse(rawOps);
+    if (Array.isArray(parsedOps)) {
+      parsedOps.forEach(([key, val]) => posaProcessedOpsDb.set(key, val));
+      console.log(`[POSA Storage] Loaded ${posaProcessedOpsDb.size} idempotency ops from local disk persistence.`);
     }
   }
 } catch (e) {
   console.warn('[POSA Storage] Failed to load offline disk persistence:', e.message);
+}
+
+let posaSaveTimer = null;
+function savePOSAPersistence() {
+  if (posaSaveTimer) clearTimeout(posaSaveTimer);
+  posaSaveTimer = setTimeout(async () => {
+    try {
+      const data = JSON.stringify(Array.from(posaRecordsDb.entries()), null, 2);
+      await fs.promises.writeFile(PERSISTENCE_FILE, data, 'utf8');
+      const opsData = JSON.stringify(Array.from(posaProcessedOpsDb.entries()), null, 2);
+      await fs.promises.writeFile(IDEMPOTENCY_FILE, opsData, 'utf8');
+    } catch (e) {
+      console.warn('[POSA Storage] Failed async snapshot to disk:', e.message);
+    }
+  }, 100);
+}
+
+// Synchronously flush all snapshots before process exit
+function flushAllPersistenceSync() {
+  try {
+    fs.writeFileSync(PERSISTENCE_FILE, JSON.stringify(Array.from(posaRecordsDb.entries()), null, 2), 'utf8');
+    fs.writeFileSync(IDEMPOTENCY_FILE, JSON.stringify(Array.from(posaProcessedOpsDb.entries()), null, 2), 'utf8');
+    fs.writeFileSync(APPS_FILE, JSON.stringify(Array.from(appsDb.entries()), null, 2), 'utf8');
+    console.log('[Server Exit Guard] Flushed all storage snapshots to disk.');
+  } catch (e) {}
 }
 
 function canonicalJsonStringify(obj) {
@@ -809,31 +844,6 @@ function compareHLC(hlcA, hlcB) {
     return String(hlcA).localeCompare(String(hlcB));
   }
 }
-
-let posaSaveTimer = null;
-function savePOSAPersistence() {
-  if (posaSaveTimer) clearTimeout(posaSaveTimer);
-  posaSaveTimer = setTimeout(async () => {
-    try {
-      const data = JSON.stringify(Array.from(posaRecordsDb.entries()), null, 2);
-      await fs.promises.writeFile(PERSISTENCE_FILE, data, 'utf8');
-    } catch (e) {
-      console.warn('[POSA Storage] Failed async snapshot to disk:', e.message);
-    }
-  }, 300);
-}
-
-// Synchronously flush all snapshots before process exit
-function flushAllPersistenceSync() {
-  try {
-    fs.writeFileSync(PERSISTENCE_FILE, JSON.stringify(Array.from(posaRecordsDb.entries()), null, 2), 'utf8');
-    fs.writeFileSync(APPS_FILE, JSON.stringify(Array.from(appsDb.entries()), null, 2), 'utf8');
-    console.log('[Server Exit Guard] Flushed all storage snapshots to disk.');
-  } catch (e) {}
-}
-
-process.on('SIGINT', () => { flushAllPersistenceSync(); process.exit(0); });
-process.on('SIGTERM', () => { flushAllPersistenceSync(); process.exit(0); });
 
 // GET POSA Engine & Server Health Ping (Used by Adaptive Sync Engine - ASE)
 app.get('/api/v1/posa/health', (req, res) => {

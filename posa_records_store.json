@@ -290,5 +290,100 @@
       "hlc": "2026-08-02T16:28:50.730Z-0001-dev_profile_alpha_1",
       "deviceId": "dev_profile_alpha_1"
     }
+  ],
+  [
+    "user_records:rec_0",
+    {
+      "collection": "user_records",
+      "recordId": "rec_0",
+      "payload": {
+        "id": "rec_0",
+        "title": "Destructive Test Op #65",
+        "category": "EVENT",
+        "price": 165
+      },
+      "updatedAt": "2026-08-02T17:33:32.693Z",
+      "hlc": "2026-08-02T16:33:33.322Z-0001-dev_profile_alpha",
+      "deviceId": "dev_profile_alpha"
+    }
+  ],
+  [
+    "user_records:rec_1",
+    {
+      "collection": "user_records",
+      "recordId": "rec_1",
+      "payload": {
+        "id": "rec_1",
+        "title": "Destructive Test Op #66",
+        "category": "EVENT",
+        "price": 166
+      },
+      "updatedAt": "2026-08-02T17:33:32.693Z",
+      "hlc": "2026-08-02T16:33:33.332Z-0001-dev_profile_alpha",
+      "deviceId": "dev_profile_alpha"
+    }
+  ],
+  [
+    "user_records:rec_2",
+    {
+      "collection": "user_records",
+      "recordId": "rec_2",
+      "payload": {
+        "id": "rec_2",
+        "title": "Destructive Test Op #67",
+        "category": "EVENT",
+        "price": 167
+      },
+      "updatedAt": "2026-08-02T17:33:32.693Z",
+      "hlc": "2026-08-02T16:33:33.342Z-0001-dev_profile_alpha",
+      "deviceId": "dev_profile_alpha"
+    }
+  ],
+  [
+    "user_records:rec_3",
+    {
+      "collection": "user_records",
+      "recordId": "rec_3",
+      "payload": {
+        "id": "rec_3",
+        "title": "Destructive Test Op #68",
+        "category": "EVENT",
+        "price": 168
+      },
+      "updatedAt": "2026-08-02T17:33:32.693Z",
+      "hlc": "2026-08-02T16:33:33.352Z-0001-dev_profile_alpha",
+      "deviceId": "dev_profile_alpha"
+    }
+  ],
+  [
+    "user_records:rec_4",
+    {
+      "collection": "user_records",
+      "recordId": "rec_4",
+      "payload": {
+        "id": "rec_4",
+        "title": "Destructive Test Op #69",
+        "category": "EVENT",
+        "price": 169
+      },
+      "updatedAt": "2026-08-02T17:33:32.693Z",
+      "hlc": "2026-08-02T16:33:33.362Z-0001-dev_profile_alpha",
+      "deviceId": "dev_profile_alpha"
+    }
+  ],
+  [
+    "user_records:shared_record_1",
+    {
+      "collection": "user_records",
+      "recordId": "shared_record_1",
+      "payload": {
+        "id": "shared_record_1",
+        "title": "Profile B Edits (Newer HLC Winner)",
+        "price": 350
+      },
+      "updatedAt": "2026-08-02T17:33:33.533Z",
+      "hlc": "2026-08-02T17:33:33.524Z-0002-dev_profile_beta",
+      "deviceId": "dev_profile_beta"
+    }
   ]
 ]
