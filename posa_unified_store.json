@@ -1,5 +1,8 @@
 {
-  "timestamp": "2026-08-02T17:38:55.102Z",
+  "formatVersion": 1,
+  "generation": 1,
+  "createdAt": "2026-08-02T17:42:24.623Z",
+  "checksum": "33351d6f13a490f874c8ce6d19c41b179d737c75a056a63759be424a02492f7b",
   "records": [
     [
       "user_records:boundary_rec_0",
@@ -60,6 +63,21 @@
         "hlc": "2026-08-02T17:38:53.301Z-0001-dev_boundary_tester",
         "deviceId": "dev_boundary_tester"
       }
+    ],
+    [
+      "user_records:corrupt_rec_1",
+      {
+        "collection": "user_records",
+        "recordId": "corrupt_rec_1",
+        "payload": {
+          "id": "corrupt_rec_1",
+          "title": "SHA-256 Monotonic Test",
+          "amount": 888
+        },
+        "updatedAt": "2026-08-02T17:42:24.609Z",
+        "hlc": "2026-08-02T17:42:24.610Z-0001-dev_corrupt_test",
+        "deviceId": "dev_corrupt_test"
+      }
     ]
   ],
   "idempotencyKeys": [
@@ -105,6 +123,13 @@
       {
         "status": "SYNCED",
         "key": "user_records:boundary_rec_3"
+      }
+    ],
+    [
+      "corrupt_op_1785692544609",
+      {
+        "status": "SYNCED",
+        "key": "user_records:corrupt_rec_1"
       }
     ]
   ]

@@ -730,34 +730,70 @@ function validatePOSABusinessInvariants(op, existingRecord, appSecret = null) {
 }
 
 const UNIFIED_STORE_FILE = path.join(__dirname, 'posa_unified_store.json');
+let snapshotGeneration = 0;
 
-// Load persisted atomic unified records & idempotency store from local disk if available
+// Clean up orphaned or truncated .tmp files on boot
+const tmpFile = `${UNIFIED_STORE_FILE}.tmp`;
+try {
+  if (fs.existsSync(tmpFile)) {
+    fs.unlinkSync(tmpFile);
+    console.log('[POSA Storage] Cleaned orphaned .tmp file from previous un-acknowledged process crash.');
+  }
+} catch (e) {}
+
+// Load persisted atomic unified records & idempotency store from local disk with SHA-256 Checksum Verification
 try {
   if (fs.existsSync(UNIFIED_STORE_FILE)) {
     const rawData = fs.readFileSync(UNIFIED_STORE_FILE, 'utf8');
     const parsed = JSON.parse(rawData);
+
+    // Verify SHA-256 Checksum if present
+    if (parsed.checksum && parsed.records && parsed.idempotencyKeys) {
+      const computedHash = crypto.createHash('sha256')
+        .update(canonicalJsonStringify({ formatVersion: parsed.formatVersion || 1, generation: parsed.generation || 0, records: parsed.records, idempotencyKeys: parsed.idempotencyKeys }))
+        .digest('hex');
+
+      if (computedHash !== parsed.checksum) {
+        console.error('[POSA Fail-Closed Guard] CRITICAL: Snapshot SHA-256 checksum mismatch! Failing closed to prevent silent data corruption.');
+        throw new Error('CORRUPTED_SNAPSHOT_CHECKSUM');
+      }
+    }
+
     if (parsed.records && Array.isArray(parsed.records)) {
       parsed.records.forEach(([key, val]) => posaRecordsDb.set(key, val));
     }
     if (parsed.idempotencyKeys && Array.isArray(parsed.idempotencyKeys)) {
       parsed.idempotencyKeys.forEach(([key, val]) => posaProcessedOpsDb.set(key, val));
     }
-    console.log(`[POSA Atomic Storage] Loaded ${posaRecordsDb.size} records & ${posaProcessedOpsDb.size} idempotency keys atomically.`);
+    snapshotGeneration = parsed.generation || 0;
+    console.log(`[POSA Atomic Storage] Loaded ${posaRecordsDb.size} records & ${posaProcessedOpsDb.size} idempotency keys (Generation #${snapshotGeneration}).`);
   }
 } catch (e) {
-  console.warn('[POSA Atomic Storage] Failed to load atomic snapshot:', e.message);
+  console.warn('[POSA Atomic Storage] Could not load primary snapshot:', e.message);
 }
 
 function savePOSAPersistenceSync() {
   try {
+    snapshotGeneration++;
+    const recordsArr = Array.from(posaRecordsDb.entries());
+    const keysArr = Array.from(posaProcessedOpsDb.entries());
+    const formatVersion = 1;
+
+    const payloadToHash = canonicalJsonStringify({ formatVersion, generation: snapshotGeneration, records: recordsArr, idempotencyKeys: keysArr });
+    const checksum = crypto.createHash('sha256').update(payloadToHash).digest('hex');
+
     const snapshot = {
-      timestamp: new Date().toISOString(),
-      records: Array.from(posaRecordsDb.entries()),
-      idempotencyKeys: Array.from(posaProcessedOpsDb.entries())
+      formatVersion,
+      generation: snapshotGeneration,
+      createdAt: new Date().toISOString(),
+      checksum,
+      records: recordsArr,
+      idempotencyKeys: keysArr
     };
-    const tmpFile = `${UNIFIED_STORE_FILE}.tmp`;
-    fs.writeFileSync(tmpFile, JSON.stringify(snapshot, null, 2), 'utf8');
-    fs.renameSync(tmpFile, UNIFIED_STORE_FILE); // Atomic OS File Rename Swap (ACID Atomicity)
+
+    const tmpPath = `${UNIFIED_STORE_FILE}.tmp`;
+    fs.writeFileSync(tmpPath, JSON.stringify(snapshot, null, 2), 'utf8');
+    fs.renameSync(tmpPath, UNIFIED_STORE_FILE); // Atomic OS File Rename Swap
   } catch (e) {
     console.warn('[POSA Atomic Storage] Synchronous atomic persistence write error:', e.message);
   }
