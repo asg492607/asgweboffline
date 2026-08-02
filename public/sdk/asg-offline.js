@@ -205,7 +205,6 @@
         }
       });
     }
-    }
 
     attachDbHelpers() {
       const self = this;
