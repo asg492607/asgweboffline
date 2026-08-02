@@ -803,9 +803,24 @@ class POSAStorageAdapter {
     this.dbConnection = dbConnection;
   }
 
+  parseHLC(hlcStr) {
+    if (typeof hlcStr !== 'string') return { wallMs: Date.now(), counter: 0, deviceId: 'unknown' };
+    const match = hlcStr.match(/^(.+)-(\d+)-(.+)$/);
+    if (match) {
+      return {
+        wallMs: new Date(match[1]).getTime() || Date.now(),
+        counter: parseInt(match[2], 10) || 0,
+        deviceId: match[3]
+      };
+    }
+    return { wallMs: Date.now(), counter: 0, deviceId: String(hlcStr) };
+  }
+
   generatePostgreSQLTransactionSql(operation, recordData) {
     const { operationId, deviceId } = operation;
     const { recordId, collection, hlc, payload } = recordData;
+    const parsedHlc = this.parseHLC(hlc);
+
     return `
 BEGIN;
 
@@ -814,12 +829,17 @@ INSERT INTO posa_idempotency_ops (operation_id, device_id, status, created_at)
 VALUES ('${operationId}', '${deviceId}', 'COMMITTED', NOW())
 ON CONFLICT (operation_id) DO NOTHING;
 
--- 2. Upsert business mutation atomically with HLC conflict check
-INSERT INTO posa_business_records (record_id, collection_name, hlc_vector, payload, updated_at)
-VALUES ('${recordId}', '${collection}', '${hlc}', '${JSON.stringify(payload)}', NOW())
+-- 2. Upsert business mutation atomically with Numeric HLC Tuple Comparison (Prevents String Lexicographic Bug)
+INSERT INTO posa_business_records (record_id, collection_name, hlc_wall_ms, hlc_counter, hlc_device, payload, updated_at)
+VALUES ('${recordId}', '${collection}', ${parsedHlc.wallMs}, ${parsedHlc.counter}, '${parsedHlc.deviceId}', '${JSON.stringify(payload)}', NOW())
 ON CONFLICT (record_id) DO UPDATE
-SET hlc_vector = EXCLUDED.hlc_vector, payload = EXCLUDED.payload, updated_at = NOW()
-WHERE EXCLUDED.hlc_vector > posa_business_records.hlc_vector;
+SET hlc_wall_ms = EXCLUDED.hlc_wall_ms,
+    hlc_counter = EXCLUDED.hlc_counter,
+    hlc_device = EXCLUDED.hlc_device,
+    payload = EXCLUDED.payload,
+    updated_at = NOW()
+WHERE (EXCLUDED.hlc_wall_ms, EXCLUDED.hlc_counter, EXCLUDED.hlc_device) > 
+      (posa_business_records.hlc_wall_ms, posa_business_records.hlc_counter, posa_business_records.hlc_device);
 
 COMMIT;
     `;
