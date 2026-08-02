@@ -42,8 +42,12 @@ function inspectCurrentTab() {
       }
 
       let queuedItems = [];
-      if (hasSdk && window.ASGOffline.database) {
-        try { queuedItems = await window.ASGOffline.database.getAll('offline_records'); } catch(e){}
+      if (hasSdk) {
+        try {
+          const recs = window.ASGOffline.database ? await window.ASGOffline.database.getAll('offline_records') : [];
+          const posa = window.ASGOffline.getPOSAQueue ? await window.ASGOffline.getPOSAQueue() : [];
+          queuedItems = [...recs, ...posa];
+        } catch(e){}
       }
 
       return {

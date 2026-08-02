@@ -731,14 +731,18 @@ app.post('/api/v1/posa/peer-sync', (req, res) => {
       processed.push(op.operationId);
     } else {
       // Merge logic
-      posaRecordsDb.set(key, {
-        collection,
-        recordId,
-        payload: { ...existing.payload, ...payload, _mergedAt: new Date().toISOString() },
-        updatedAt: new Date().toISOString(),
-        hlc,
-        deviceId: peerId
-      });
+      if (action === 'DELETE') {
+        posaRecordsDb.delete(key);
+      } else {
+        posaRecordsDb.set(key, {
+          collection,
+          recordId,
+          payload: { ...existing.payload, ...payload, _mergedAt: new Date().toISOString() },
+          updatedAt: new Date().toISOString(),
+          hlc,
+          deviceId: peerId
+        });
+      }
       processed.push(op.operationId);
     }
   }

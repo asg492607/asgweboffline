@@ -181,13 +181,14 @@
             const record = {
               collection,
               ...data,
-              createdAt: new Date().toISOString(),
+              createdAt: data.createdAt || new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
               synced: false
             };
-            const req = store.add(record);
+            const req = data.id ? store.put(record) : store.add(record);
             req.onsuccess = (e) => {
-              record.id = e.target.result;
-              console.log(`[In-Browser DB] Record added to '${collection}':`, record);
+              record.id = record.id || e.target.result;
+              console.log(`[In-Browser DB] Record saved to '${collection}':`, record);
               resolve(record);
             };
             req.onerror = (e) => reject(e);

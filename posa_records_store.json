@@ -10,10 +10,10 @@
         "price": 1200,
         "notes": "Dev B Overwrite Notes",
         "priority": "EXPEDITED",
-        "_mergedAt": "2026-08-02T16:29:09.543Z"
+        "_mergedAt": "2026-08-02T16:30:49.789Z"
       },
-      "updatedAt": "2026-08-02T16:29:09.543Z",
-      "hlc": "2026-08-02T16:29:09.572Z-0001-dev_beta",
+      "updatedAt": "2026-08-02T16:30:49.789Z",
+      "hlc": "2026-08-02T16:30:49.826Z-0001-dev_beta",
       "deviceId": "dev_beta"
     }
   ],
@@ -26,10 +26,10 @@
         "id": "inv_10",
         "title": "Offline Subnet Scanner",
         "qty": 50,
-        "_mergedAt": "2026-08-02T16:29:09.545Z"
+        "_mergedAt": "2026-08-02T16:30:49.792Z"
       },
-      "updatedAt": "2026-08-02T16:29:09.545Z",
-      "hlc": "2026-08-02T16:29:09.545Z-0001-peer_node_777",
+      "updatedAt": "2026-08-02T16:30:49.792Z",
+      "hlc": "2026-08-02T16:30:49.791Z-0001-peer_node_777",
       "deviceId": "peer_node_777"
     }
   ]
