@@ -49,7 +49,7 @@ appsDb.set('demo-app', {
   `,
   enableBackgroundSync: true,
   enableOfflineNotifications: true,
-  cacheVersion: 'v1.0.0',
+  cacheVersion: 'v2.0.0-all-in-one',
   createdAt: new Date().toISOString()
 });
 

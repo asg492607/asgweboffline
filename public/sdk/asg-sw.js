@@ -4,7 +4,7 @@
  */
 
 const CACHE_PREFIX = 'asg-offline-cache';
-let CURRENT_CACHE_VERSION = 'v1.0.0';
+let CURRENT_CACHE_VERSION = 'v2.0.0-all-in-one';
 let CACHE_NAME = `${CACHE_PREFIX}-${CURRENT_CACHE_VERSION}`;
 
 let DEFAULT_PRECACHE = [
