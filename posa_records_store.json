@@ -110,5 +110,185 @@
       "hlc": "2026-08-02T17:23:47.871Z-0000-dev_10ot53og_1785690961719",
       "deviceId": "dev_10ot53og_1785690961719"
     }
+  ],
+  [
+    "user_records:user_rec_0",
+    {
+      "collection": "user_records",
+      "recordId": "user_rec_0",
+      "payload": {
+        "id": "user_rec_0",
+        "title": "EVENT Op #130",
+        "price": 280,
+        "category": "EVENT",
+        "meta": {
+          "seq": 130,
+          "device": "dev_profile_alpha_1"
+        }
+      },
+      "updatedAt": "2026-08-02T17:28:49.345Z",
+      "hlc": "2026-08-02T16:28:50.640Z-0001-dev_profile_alpha_1",
+      "deviceId": "dev_profile_alpha_1"
+    }
+  ],
+  [
+    "user_records:user_rec_1",
+    {
+      "collection": "user_records",
+      "recordId": "user_rec_1",
+      "payload": {
+        "id": "user_rec_1",
+        "title": "EVENT Op #131",
+        "price": 281,
+        "category": "EVENT",
+        "meta": {
+          "seq": 131,
+          "device": "dev_profile_alpha_1"
+        }
+      },
+      "updatedAt": "2026-08-02T17:28:49.345Z",
+      "hlc": "2026-08-02T16:28:50.650Z-0001-dev_profile_alpha_1",
+      "deviceId": "dev_profile_alpha_1"
+    }
+  ],
+  [
+    "user_records:user_rec_2",
+    {
+      "collection": "user_records",
+      "recordId": "user_rec_2",
+      "payload": {
+        "id": "user_rec_2",
+        "title": "EVENT Op #132",
+        "price": 282,
+        "category": "EVENT",
+        "meta": {
+          "seq": 132,
+          "device": "dev_profile_alpha_1"
+        }
+      },
+      "updatedAt": "2026-08-02T17:28:49.345Z",
+      "hlc": "2026-08-02T16:28:50.660Z-0001-dev_profile_alpha_1",
+      "deviceId": "dev_profile_alpha_1"
+    }
+  ],
+  [
+    "user_records:user_rec_3",
+    {
+      "collection": "user_records",
+      "recordId": "user_rec_3",
+      "payload": {
+        "id": "user_rec_3",
+        "title": "EVENT Op #133",
+        "price": 283,
+        "category": "EVENT",
+        "meta": {
+          "seq": 133,
+          "device": "dev_profile_alpha_1"
+        }
+      },
+      "updatedAt": "2026-08-02T17:28:49.345Z",
+      "hlc": "2026-08-02T16:28:50.670Z-0001-dev_profile_alpha_1",
+      "deviceId": "dev_profile_alpha_1"
+    }
+  ],
+  [
+    "user_records:user_rec_5",
+    {
+      "collection": "user_records",
+      "recordId": "user_rec_5",
+      "payload": {
+        "id": "user_rec_5",
+        "title": "EVENT Op #135",
+        "price": 285,
+        "category": "EVENT",
+        "meta": {
+          "seq": 135,
+          "device": "dev_profile_alpha_1"
+        }
+      },
+      "updatedAt": "2026-08-02T17:28:49.346Z",
+      "hlc": "2026-08-02T16:28:50.690Z-0001-dev_profile_alpha_1",
+      "deviceId": "dev_profile_alpha_1"
+    }
+  ],
+  [
+    "user_records:user_rec_6",
+    {
+      "collection": "user_records",
+      "recordId": "user_rec_6",
+      "payload": {
+        "id": "user_rec_6",
+        "title": "EVENT Op #136",
+        "price": 286,
+        "category": "EVENT",
+        "meta": {
+          "seq": 136,
+          "device": "dev_profile_alpha_1"
+        }
+      },
+      "updatedAt": "2026-08-02T17:28:49.346Z",
+      "hlc": "2026-08-02T16:28:50.700Z-0001-dev_profile_alpha_1",
+      "deviceId": "dev_profile_alpha_1"
+    }
+  ],
+  [
+    "user_records:user_rec_7",
+    {
+      "collection": "user_records",
+      "recordId": "user_rec_7",
+      "payload": {
+        "id": "user_rec_7",
+        "title": "EVENT Op #137",
+        "price": 287,
+        "category": "EVENT",
+        "meta": {
+          "seq": 137,
+          "device": "dev_profile_alpha_1"
+        }
+      },
+      "updatedAt": "2026-08-02T17:28:49.346Z",
+      "hlc": "2026-08-02T16:28:50.710Z-0001-dev_profile_alpha_1",
+      "deviceId": "dev_profile_alpha_1"
+    }
+  ],
+  [
+    "user_records:user_rec_8",
+    {
+      "collection": "user_records",
+      "recordId": "user_rec_8",
+      "payload": {
+        "id": "user_rec_8",
+        "title": "EVENT Op #138",
+        "price": 288,
+        "category": "EVENT",
+        "meta": {
+          "seq": 138,
+          "device": "dev_profile_alpha_1"
+        }
+      },
+      "updatedAt": "2026-08-02T17:28:49.346Z",
+      "hlc": "2026-08-02T16:28:50.720Z-0001-dev_profile_alpha_1",
+      "deviceId": "dev_profile_alpha_1"
+    }
+  ],
+  [
+    "user_records:user_rec_9",
+    {
+      "collection": "user_records",
+      "recordId": "user_rec_9",
+      "payload": {
+        "id": "user_rec_9",
+        "title": "EVENT Op #139",
+        "price": 289,
+        "category": "EVENT",
+        "meta": {
+          "seq": 139,
+          "device": "dev_profile_alpha_1"
+        }
+      },
+      "updatedAt": "2026-08-02T17:28:49.346Z",
+      "hlc": "2026-08-02T16:28:50.730Z-0001-dev_profile_alpha_1",
+      "deviceId": "dev_profile_alpha_1"
+    }
   ]
 ]
