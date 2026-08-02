@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Find current active snippet tab key
         const activeTab = document.querySelector('.snippet-tab.active');
-        const activeKey = activeTab ? activeTab.getAttribute('data-snippet') : 'vanilla';
+        const activeKey = activeTab ? activeTab.getAttribute('data-snippet') : 'allInOne';
         displayGeneratedSnippet(activeKey);
 
         showNotification('Full-Stack Offline Code Generated!', `Configured for Frontend '${data.domain}' & Backend API '${data.backendApiUrl}'`, 'success');
@@ -91,7 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const displayPre = document.getElementById('gen-code-display');
     if (!generatedSnippets || !displayPre) return;
 
-    if (key === 'vanilla') displayPre.innerText = generatedSnippets.vanillaHtml;
+    if (key === 'allInOne') displayPre.innerText = generatedSnippets.allInOne || generatedSnippets.vanillaHtml;
+    else if (key === 'backend') displayPre.innerText = generatedSnippets.backend || '// No backend snippet';
+    else if (key === 'vanilla') displayPre.innerText = generatedSnippets.vanillaHtml;
     else if (key === 'react') displayPre.innerText = generatedSnippets.react;
     else if (key === 'vue') displayPre.innerText = generatedSnippets.vue;
     else if (key === 'apiSync') displayPre.innerText = generatedSnippets.apiSync;

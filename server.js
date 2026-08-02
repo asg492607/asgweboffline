@@ -418,14 +418,83 @@ self.addEventListener('fetch', (event) => {
     display: 'standalone'
   };
 
+  // All-In-One Unified Frontend & Backend Code Bundle
+  const allInOneCode = `<!-- ==================================================================== -->
+<!-- 📡 ASG OFFLINE WEB SERVICE: ALL-IN-ONE FRONTEND INTEGRATION          -->
+<!-- Frontend: ${websiteUrl}                                             -->
+<!-- Backend API: ${backendApiUrl}                                        -->
+<!-- ==================================================================== -->
+
+<!-- 1-Line Embed Script Tag -->
+<script src="${host}/sdk/asg-offline.js" data-app-id="${appId}" data-server-url="${host}"></script>
+
+<script>
+  // Complete All-in-One Client Setup & API Wrappers
+  window.addEventListener('DOMContentLoaded', () => {
+    console.log('⚡ ASG Offline Engine initialized for ${domain}');
+
+    // Monitor Online/Offline Connection State
+    window.ASGOffline.onStatusChange((isOnline) => {
+      console.log(isOnline ? '🟢 Connected to Server' : '📡 Offline Mode Active (IndexedDB DB & POSA Queue Active)');
+    });
+
+    // 1-Line Operations (Save, Update, Delete, Query, API Sync)
+    window.offlineApp = {
+      save: (collection, data) => window.ASGOffline.save(collection, data),
+      update: (collection, id, delta) => window.ASGOffline.update(collection, id, delta),
+      delete: (collection, id) => window.ASGOffline.delete(collection, id),
+      find: (collection) => window.ASGOffline.find(collection),
+      syncPost: (path, payload) => window.ASGOffline.syncPost('${backendApiUrl}' + path, payload),
+      syncPut: (path, payload) => window.ASGOffline.syncPut('${backendApiUrl}' + path, payload),
+      syncDelete: (path, payload) => window.ASGOffline.syncDelete('${backendApiUrl}' + path, payload),
+      fetch: (path, opts) => window.ASGOffline.fetch('${backendApiUrl}' + path, opts)
+    };
+  });
+</script>`;
+
+  const backendCode = `// ====================================================================
+// ⚡ ASG OFFLINE WEB SERVICE: ALL-IN-ONE BACKEND RECEIVER ENDPOINT
+// Add this route to your Node.js / Express Backend (${backendApiUrl})
+// ====================================================================
+
+const express = require('express');
+const router = express.Router();
+
+router.post('/api/v1/posa/sync', express.json(), async (req, res) => {
+  const { appId, deviceId, operations } = req.body;
+  console.log(\`[POSA Receiver] Processing \${operations ? operations.length : 0} offline ops for '\${appId}'\`);
+
+  const processedIds = [];
+  if (Array.isArray(operations)) {
+    for (const op of operations) {
+      // Execute in your DB (Postgres/MongoDB/MySQL) based on op.action ('CREATE'|'UPDATE'|'DELETE')
+      processedIds.push(op.operationId);
+    }
+  }
+
+  res.json({
+    success: true,
+    processedIds,
+    serverTimestamp: new Date().toISOString(),
+    message: \`Successfully synced \${processedIds.length} offline operations\`
+  });
+});
+
+module.exports = router;`;
+
   res.json({
     success: true,
     appId,
     domain,
     websiteUrl,
     backendApiUrl,
+    oneLineEmbed: `<script src="${host}/sdk/asg-offline.js" data-app-id="${appId}" data-server-url="${host}"></script>`,
+    allInOneBundle: allInOneCode,
+    backendSetup: backendCode,
     config: appConfig,
     snippets: {
+      allInOne: allInOneCode,
+      backend: backendCode,
       vanillaHtml: vanillaHtmlCode,
       react: reactCode,
       vue: vueCode,
@@ -433,6 +502,141 @@ self.addEventListener('fetch', (event) => {
       standaloneSw: standaloneSwCode,
       manifest: JSON.stringify(manifest, null, 2)
     }
+  });
+});
+
+// GET & POST /api/v1/all-in-one : Simple, All-in-One API Endpoint for Frontend & Backend links
+const handleAllInOne = (req, res) => {
+  const params = { ...req.query, ...req.body };
+  let websiteUrl = params.frontendUrl || params.frontend || params.websiteUrl || params.url;
+  let backendApiUrl = params.backendApiUrl || params.backend || params.apiUrl;
+
+  if (!websiteUrl) {
+    return res.status(400).json({
+      success: false,
+      error: 'frontendUrl (or frontend) is required. Example: /api/v1/all-in-one?frontendUrl=https://my-site.com&backendApiUrl=https://api.my-site.com'
+    });
+  }
+
+  backendApiUrl = backendApiUrl || 'https://api.example.com';
+  req.body = { websiteUrl, frontendUrl: websiteUrl, backendApiUrl };
+
+  // Forward to generator
+  app._router.handle(req, res, () => {});
+};
+
+app.get('/api/v1/all-in-one', (req, res) => {
+  const params = { ...req.query, ...req.body };
+  let websiteUrl = params.frontendUrl || params.frontend || params.websiteUrl || params.url;
+  let backendApiUrl = params.backendApiUrl || params.backend || params.apiUrl;
+
+  if (!websiteUrl) {
+    return res.status(400).json({
+      success: false,
+      error: 'frontendUrl (or frontend) parameter is required. Example: /api/v1/all-in-one?frontendUrl=https://my-site.com&backendApiUrl=https://api.my-site.com'
+    });
+  }
+
+  req.body = { frontendUrl: websiteUrl, websiteUrl, backendApiUrl: backendApiUrl || 'https://api.example.com' };
+  
+  // Synthesize POST to analyze-and-generate logic
+  const host = process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+  
+  let parsedUrl;
+  try {
+    if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) websiteUrl = 'https://' + websiteUrl;
+    parsedUrl = new URL(websiteUrl);
+  } catch (e) {
+    return res.status(400).json({ success: false, error: 'Invalid frontendUrl format' });
+  }
+
+  const domain = parsedUrl.hostname;
+  const appId = domain.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() + '-offline';
+
+  const appConfig = {
+    appId,
+    appName: domain + ' Offline App',
+    domain,
+    websiteUrl,
+    backendApiUrl: backendApiUrl || 'https://api.example.com',
+    cacheStrategy: 'stale-while-revalidate',
+    precacheUrls: ['/', '/index.html', '/styles.css', '/main.js'],
+    createdAt: new Date().toISOString()
+  };
+
+  appsDb.set(appId, appConfig);
+  saveAppsPersistence();
+
+  const oneLineEmbed = `<script src="${host}/sdk/asg-offline.js" data-app-id="${appId}" data-server-url="${host}"></script>`;
+  
+  const allInOneBundle = `<!-- 📡 ASG OFFLINE WEB SERVICE: ALL-IN-ONE FRONTEND INTEGRATION -->
+<script src="${host}/sdk/asg-offline.js" data-app-id="${appId}" data-server-url="${host}"></script>
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    console.log('⚡ ASG Offline Service active for ${domain}');
+    window.ASGOffline.onStatusChange((isOnline) => {
+      console.log(isOnline ? '🟢 Online' : '📡 Offline');
+    });
+  });
+</script>`;
+
+  const backendSetup = `// ⚡ ASG OFFLINE WEB SERVICE: BACKEND RECEIVER (${backendApiUrl || 'https://api.example.com'})
+app.post('/api/v1/posa/sync', express.json(), (req, res) => {
+  res.json({ success: true, processedIds: (req.body.operations || []).map(o => o.operationId) });
+});`;
+
+  res.json({
+    success: true,
+    appId,
+    domain,
+    frontendUrl: websiteUrl,
+    backendApiUrl: backendApiUrl || 'https://api.example.com',
+    oneLineEmbed,
+    allInOneBundle,
+    backendSetup,
+    config: appConfig
+  });
+});
+
+app.post('/api/v1/all-in-one', (req, res) => {
+  const params = { ...req.query, ...req.body };
+  let websiteUrl = params.frontendUrl || params.frontend || params.websiteUrl || params.url;
+  let backendApiUrl = params.backendApiUrl || params.backend || params.apiUrl;
+  req.body = { frontendUrl: websiteUrl, websiteUrl, backendApiUrl };
+  
+  const host = process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+  
+  if (!websiteUrl) {
+    return res.status(400).json({ success: false, error: 'frontendUrl is required in request body or query' });
+  }
+
+  if (!websiteUrl.startsWith('http://') && !websiteUrl.startsWith('https://')) websiteUrl = 'https://' + websiteUrl;
+  let domain = new URL(websiteUrl).hostname;
+  let appId = domain.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() + '-offline';
+
+  const appConfig = {
+    appId,
+    appName: domain + ' Offline App',
+    domain,
+    websiteUrl,
+    backendApiUrl: backendApiUrl || 'https://api.example.com',
+    cacheStrategy: 'stale-while-revalidate',
+    createdAt: new Date().toISOString()
+  };
+
+  appsDb.set(appId, appConfig);
+  saveAppsPersistence();
+
+  res.json({
+    success: true,
+    appId,
+    domain,
+    frontendUrl: websiteUrl,
+    backendApiUrl: backendApiUrl || 'https://api.example.com',
+    oneLineEmbed: `<script src="${host}/sdk/asg-offline.js" data-app-id="${appId}" data-server-url="${host}"></script>`,
+    allInOneBundle: `<!-- 📡 ASG ALL-IN-ONE FRONTEND EMBED -->\n<script src="${host}/sdk/asg-offline.js" data-app-id="${appId}" data-server-url="${host}"></script>`,
+    backendSetup: `// ⚡ ASG BACKEND SYNC RECEIVER\napp.post('/api/v1/posa/sync', express.json(), (req, res) => res.json({ success: true }));`,
+    config: appConfig
   });
 });
 
