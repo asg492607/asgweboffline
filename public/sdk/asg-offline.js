@@ -1387,14 +1387,28 @@
       console.log(`[POSA Engine] Conflict Resolution Strategy set to '${strategy}'`);
     }
 
-    // ==================== 1-LINE API SHORTCUTS FOR CLIENTS ====================
-
     /** 1-Line API: Save record to in-browser database (Auto-synced when online via POSA DAG) */
     async save(collection, recordData) {
       if (this.db) {
         return await this.posaSave(collection, recordData);
       }
       return await this.queueOfflineRequest(`/api/v1/${collection}`, 'POST', recordData);
+    }
+
+    /** 1-Line API: Update record in in-browser database (Auto-synced when online via POSA DAG) */
+    async update(collection, recordId, deltaData, options = {}) {
+      if (this.db) {
+        return await this.posaUpdate(collection, recordId, deltaData, options);
+      }
+      return await this.queueOfflineRequest(`/api/v1/${collection}/${recordId}`, 'PUT', deltaData);
+    }
+
+    /** 1-Line API: Delete record from in-browser database (Auto-synced when online via POSA DAG) */
+    async delete(collection, recordId, options = {}) {
+      if (this.db) {
+        return await this.posaDelete(collection, recordId, options);
+      }
+      return await this.queueOfflineRequest(`/api/v1/${collection}/${recordId}`, 'DELETE', { id: recordId });
     }
 
     /** 1-Line API: Retrieve all records from in-browser database */
@@ -1421,6 +1435,81 @@
       }
       await this.queueOfflineRequest(url, 'POST', payload);
       return { success: true, offlineQueued: true, message: 'Request queued in local browser database and will sync when online.' };
+    }
+
+    /** 1-Line API: Send API PUT request with seamless offline queue fallback */
+    async syncPut(url, payload) {
+      if (this.isOnline) {
+        try {
+          const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          return await res.json();
+        } catch (err) {
+          console.warn('[ASG Offline SDK] Network PUT failed, queuing for offline sync...');
+        }
+      }
+      await this.queueOfflineRequest(url, 'PUT', payload);
+      return { success: true, offlineQueued: true, message: 'PUT operation queued in local browser database and will sync when online.' };
+    }
+
+    /** 1-Line API: Send API DELETE request with seamless offline queue fallback */
+    async syncDelete(url, payload = {}) {
+      if (this.isOnline) {
+        try {
+          const res = await fetch(url, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          return await res.json();
+        } catch (err) {
+          console.warn('[ASG Offline SDK] Network DELETE failed, queuing for offline sync...');
+        }
+      }
+      await this.queueOfflineRequest(url, 'DELETE', payload);
+      return { success: true, offlineQueued: true, message: 'DELETE operation queued in local browser database and will sync when online.' };
+    }
+
+    /** 1-Line API: Send API GET request with cache fallback */
+    async syncGet(url) {
+      try {
+        const res = await fetch(url);
+        return await res.json();
+      } catch (err) {
+        console.warn('[ASG Offline SDK] Network GET failed, fetching from local offline store...');
+        const cachedRecords = await this.find();
+        return { success: true, offline: true, data: cachedRecords };
+      }
+    }
+
+    /** Smart Fetch Wrapper: Transparently handles network errors & queues mutating requests when offline */
+    async fetch(url, options = {}) {
+      const method = (options.method || 'GET').toUpperCase();
+      if (this.isOnline) {
+        try {
+          return await window.fetch(url, options);
+        } catch (err) {
+          console.warn(`[ASG Offline SDK] Smart fetch failed for ${method} ${url}, switching to offline fallback.`);
+        }
+      }
+
+      if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+        let payload = {};
+        if (options.body) {
+          try { payload = typeof options.body === 'string' ? JSON.parse(options.body) : options.body; } catch (e) {}
+        }
+        await this.queueOfflineRequest(url, method, payload);
+        const jsonRes = { success: true, offlineQueued: true, message: `${method} request queued offline.` };
+        return new Response(JSON.stringify(jsonRes), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'X-ASG-Offline': 'true' }
+        });
+      } else {
+        return window.fetch(url, options);
+      }
     }
   }
 
