@@ -753,26 +753,25 @@ try {
   console.warn('[POSA Storage] Failed to load offline disk persistence:', e.message);
 }
 
-let posaSaveTimer = null;
+function savePOSAPersistenceSync() {
+  try {
+    const data = JSON.stringify(Array.from(posaRecordsDb.entries()), null, 2);
+    fs.writeFileSync(PERSISTENCE_FILE, data, 'utf8');
+    const opsData = JSON.stringify(Array.from(posaProcessedOpsDb.entries()), null, 2);
+    fs.writeFileSync(IDEMPOTENCY_FILE, opsData, 'utf8');
+  } catch (e) {
+    console.warn('[POSA Storage] Synchronous disk persistence write error:', e.message);
+  }
+}
+
 function savePOSAPersistence() {
-  if (posaSaveTimer) clearTimeout(posaSaveTimer);
-  posaSaveTimer = setTimeout(async () => {
-    try {
-      const data = JSON.stringify(Array.from(posaRecordsDb.entries()), null, 2);
-      await fs.promises.writeFile(PERSISTENCE_FILE, data, 'utf8');
-      const opsData = JSON.stringify(Array.from(posaProcessedOpsDb.entries()), null, 2);
-      await fs.promises.writeFile(IDEMPOTENCY_FILE, opsData, 'utf8');
-    } catch (e) {
-      console.warn('[POSA Storage] Failed async snapshot to disk:', e.message);
-    }
-  }, 100);
+  savePOSAPersistenceSync();
 }
 
 // Synchronously flush all snapshots before process exit
 function flushAllPersistenceSync() {
+  savePOSAPersistenceSync();
   try {
-    fs.writeFileSync(PERSISTENCE_FILE, JSON.stringify(Array.from(posaRecordsDb.entries()), null, 2), 'utf8');
-    fs.writeFileSync(IDEMPOTENCY_FILE, JSON.stringify(Array.from(posaProcessedOpsDb.entries()), null, 2), 'utf8');
     fs.writeFileSync(APPS_FILE, JSON.stringify(Array.from(appsDb.entries()), null, 2), 'utf8');
     console.log('[Server Exit Guard] Flushed all storage snapshots to disk.');
   } catch (e) {}

@@ -187,9 +187,9 @@ async function runDestructiveHarness() {
 
   console.log(`   ✔ Replay Result: ${res1Retry.body.idempotentHitsCount} Idempotent Hits (0 duplicate COMMAND/EVENT side-effects).`);
 
-  // Step 5: Dual Profile Offline Reconnection Convergence
-  console.log('\n👥 Step 5: Testing Dual Offline Browser Profiles (Profile A & Profile B Convergence)...');
-  const devB = 'dev_profile_beta';
+  // Step 5: Dual Offline Client Simulation (Client A & Client B Convergence)
+  console.log('\n👥 Step 5: Dual Offline Client Simulation (Client A & Client B Convergence)...');
+  const devB = 'dev_client_beta';
 
   const profileAOps = [{
     operationId: 'op_prof_a_1',
