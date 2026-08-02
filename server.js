@@ -716,6 +716,65 @@ function canonicalJsonStringify(obj) {
   return '{' + parts.join(',') + '}';
 }
 
+function deepMerge(target, source) {
+  const isObject = (item) => item && typeof item === 'object' && !Array.isArray(item);
+  let output = Object.assign({}, target || {});
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach(key => {
+      if (isObject(source[key])) {
+        if (!(key in target)) {
+          Object.assign(output, { [key]: source[key] });
+        } else {
+          output[key] = deepMerge(target[key], source[key]);
+        }
+      } else {
+        Object.assign(output, { [key]: source[key] });
+      }
+    });
+  }
+  return output;
+}
+
+function compareHLC(hlcA, hlcB) {
+  if (!hlcA) return -1;
+  if (!hlcB) return 1;
+  if (hlcA === hlcB) return 0;
+  try {
+    const parseHLC = (str) => {
+      const zIdx = str.indexOf('Z-');
+      if (zIdx !== -1) {
+        const wallIso = str.substring(0, zIdx + 1);
+        const rest = str.substring(zIdx + 2);
+        const dashIdx = rest.indexOf('-');
+        if (dashIdx !== -1) {
+          return {
+            wallIso,
+            counter: parseInt(rest.substring(0, dashIdx), 10) || 0,
+            devId: rest.substring(dashIdx + 1)
+          };
+        }
+      }
+      return null;
+    };
+
+    const a = parseHLC(hlcA);
+    const b = parseHLC(hlcB);
+
+    if (a && b) {
+      if (a.wallIso !== b.wallIso) {
+        return a.wallIso.localeCompare(b.wallIso);
+      }
+      if (a.counter !== b.counter) {
+        return a.counter - b.counter;
+      }
+      return a.devId.localeCompare(b.devId);
+    }
+    return hlcA.localeCompare(hlcB);
+  } catch (e) {
+    return hlcA.localeCompare(hlcB);
+  }
+}
+
 let posaSaveTimer = null;
 function savePOSAPersistence() {
   if (posaSaveTimer) clearTimeout(posaSaveTimer);
@@ -873,11 +932,11 @@ app.post('/api/v1/posa/sync', (req, res) => {
         winningPayload = payload;
       } else if (strategy === 'MERGE_FIELDS') {
         winner = 'merged';
-        winningPayload = { ...existingRecord.payload, ...payload, _mergedAt: new Date().toISOString() };
+        winningPayload = deepMerge(existingRecord.payload, { ...payload, _mergedAt: new Date().toISOString() });
       } else {
-        // LAST_WRITE_WINS default with HLC priority
+        // LAST_WRITE_WINS default with HLC priority using compareHLC
         if (hlc && existingRecord.hlc) {
-          if (hlc >= existingRecord.hlc) {
+          if (compareHLC(hlc, existingRecord.hlc) >= 0) {
             winner = 'client';
             winningPayload = payload;
           } else {

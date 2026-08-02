@@ -713,6 +713,65 @@
       }
     }
 
+    deepMerge(target, source) {
+      const isObject = (item) => item && typeof item === 'object' && !Array.isArray(item);
+      let output = Object.assign({}, target || {});
+      if (isObject(target) && isObject(source)) {
+        Object.keys(source).forEach(key => {
+          if (isObject(source[key])) {
+            if (!(key in target)) {
+              Object.assign(output, { [key]: source[key] });
+            } else {
+              output[key] = this.deepMerge(target[key], source[key]);
+            }
+          } else {
+            Object.assign(output, { [key]: source[key] });
+          }
+        });
+      }
+      return output;
+    }
+
+    compareHLC(hlcA, hlcB) {
+      if (!hlcA) return -1;
+      if (!hlcB) return 1;
+      if (hlcA === hlcB) return 0;
+      try {
+        const parseHLC = (str) => {
+          const zIdx = str.indexOf('Z-');
+          if (zIdx !== -1) {
+            const wallIso = str.substring(0, zIdx + 1);
+            const rest = str.substring(zIdx + 2);
+            const dashIdx = rest.indexOf('-');
+            if (dashIdx !== -1) {
+              return {
+                wallIso,
+                counter: parseInt(rest.substring(0, dashIdx), 10) || 0,
+                devId: rest.substring(dashIdx + 1)
+              };
+            }
+          }
+          return null;
+        };
+
+        const a = parseHLC(hlcA);
+        const b = parseHLC(hlcB);
+
+        if (a && b) {
+          if (a.wallIso !== b.wallIso) {
+            return a.wallIso.localeCompare(b.wallIso);
+          }
+          if (a.counter !== b.counter) {
+            return a.counter - b.counter;
+          }
+          return a.devId.localeCompare(b.devId);
+        }
+        return hlcA.localeCompare(hlcB);
+      } catch (e) {
+        return hlcA.localeCompare(hlcB);
+      }
+    }
+
     // Hybrid Logical Clock Generator for precise multi-device ordering without network
     generateHLC() {
       const now = Date.now();
@@ -808,7 +867,7 @@
     }
 
     async ingestPeerOperation(op) {
-      if (!op || !op.collection || !op.recordId) return;
+      if (!op || !op.collection || !op.recordId) return false;
       if (op.hlc) this.updateHLC(op.hlc);
 
       console.log(`[POSA Peer Ingest] Ingesting op '${op.operationId}' from peer '${op.deviceId}'`);
@@ -822,11 +881,13 @@
           timestamp: op.timestamp
         });
         if (computed !== op.hash && !op.hash.startsWith('sha256_fb_')) {
-          console.warn(`[POSA Peer Ingest] Checksum warning for peer op '${op.operationId}'`);
+          console.error(`[POSA Security Guard] Checksum mismatch for peer op '${op.operationId}'. Aborting ingest.`);
+          this.showToast('⚠️ Tampered Data Rejected', `Checksum verification failed for peer op '${op.operationId}'`, 'warning');
+          return false;
         }
       }
 
-      // Check local DB and apply field-level merge / HLC resolution
+      // Check local DB and apply deep field-level merge / HLC resolution
       if (this.dbApi) {
         const existingRecords = await this.dbApi.getAll(op.collection);
         const existing = existingRecords.find(r => String(r.id) === String(op.recordId));
@@ -836,13 +897,14 @@
         } else {
           let mergedPayload = op.payload;
           if (existing) {
-            mergedPayload = { ...existing, ...op.payload, _mergedFromPeer: op.deviceId, _mergedAt: new Date().toISOString() };
+            mergedPayload = this.deepMerge(existing, { ...op.payload, _mergedFromPeer: op.deviceId, _mergedAt: new Date().toISOString() });
           }
           await this.dbApi.insert(op.collection, mergedPayload);
         }
       }
 
       this.showToast('🔄 Peer Data Synced', `Received update for '${op.collection}' from offline peer device '${op.deviceId.substring(0, 10)}...'`, 'info');
+      return true;
     }
 
     async syncWithPeers() {
@@ -972,7 +1034,7 @@
             if (prevItem.action === 'UPDATE' && item.action === 'UPDATE') {
               result[prevIndex] = {
                 ...prevItem,
-                payload: { ...prevItem.payload, ...item.payload },
+                payload: this.deepMerge(prevItem.payload, item.payload),
                 timestamp: item.timestamp,
                 collapsedCount: (prevItem.collapsedCount || 1) + 1
               };
@@ -983,17 +1045,18 @@
             if (prevItem.action === 'CREATE' && item.action === 'UPDATE') {
               result[prevIndex] = {
                 ...prevItem,
-                payload: { ...prevItem.payload, ...item.payload },
+                payload: this.deepMerge(prevItem.payload, item.payload),
                 timestamp: item.timestamp
               };
               continue;
             }
 
-            // Rule D: Sequential CREATE or UPDATE+CREATE -> Collapse into combined payload
+            // Rule D: Sequential CREATE or DELETE+CREATE -> Collapse into combined payload with action fix
             if (item.action === 'CREATE') {
               result[prevIndex] = {
                 ...prevItem,
-                payload: { ...prevItem.payload, ...item.payload },
+                action: prevItem.action === 'DELETE' ? 'CREATE' : prevItem.action,
+                payload: this.deepMerge(prevItem.payload, item.payload),
                 timestamp: item.timestamp,
                 collapsedCount: (prevItem.collapsedCount || 1) + 1
               };
@@ -1007,7 +1070,17 @@
         collapsedMap.set(key, index);
       }
 
-      return result.filter(item => item !== null);
+      const activeOps = result.filter(item => item !== null);
+      const validIds = new Set(activeOps.map(op => op.operationId));
+
+      // Clean ghost dependency references to collapsed/deleted operations
+      return activeOps.map(op => {
+        if (op.dependencyId && !validIds.has(op.dependencyId)) {
+          const { dependencyId, ...rest } = op;
+          return { ...rest, dependencyId: null };
+        }
+        return op;
+      });
     }
 
     /** Phase 3: DAG Dependency Graph Builder & Topological Sort */
