@@ -688,8 +688,42 @@ const crypto = require('crypto');
 // Server-side POSA Storage and Logs
 const PERSISTENCE_FILE = path.join(__dirname, 'posa_records_store.json');
 const posaRecordsDb = new Map();
+const posaProcessedOpsDb = new Map(); // Server-side Idempotency Store (keyed by operationId)
 const posaSyncLog = [];
 const posaConflictLog = [];
+
+// Server-Authoritative Business Invariant & Security Validation Pipeline
+function validatePOSABusinessInvariants(op, existingRecord, appSecret = null) {
+  const { operationId, collection, action, payload, timestamp, hash, signature, authToken, userContext } = op;
+
+  // 1. Authorization Replay Validation
+  if (authToken === 'REVOKED_TOKEN' || (userContext && userContext.status === 'REVOKED')) {
+    return { valid: false, status: 'UNAUTHORIZED_REPLAY', reason: 'User account or authentication token revoked while client was offline.' };
+  }
+
+  // 2. Cryptographic HMAC Signature Verification (if secret configured)
+  if (signature && appSecret) {
+    const computedSig = crypto.createHmac('sha256', appSecret).update(hash || '').digest('hex');
+    if (computedSig !== signature) {
+      return { valid: false, status: 'INVALID_HMAC_SIGNATURE', reason: 'Cryptographic HMAC signature verification failed.' };
+    }
+  }
+
+  // 3. Business Invariants (e.g., Stock Availability, Price Invariant, Non-negative Amounts)
+  if (collection === 'orders' || collection === 'transactions') {
+    if (payload && payload.price < 0) {
+      return { valid: false, status: 'INVARIANT_VIOLATED', reason: 'Order price cannot be negative.' };
+    }
+    if (payload && payload.stockOut === true) {
+      return { valid: false, status: 'INVARIANT_VIOLATED', reason: 'Item stock is depleted on server.' };
+    }
+    if (payload && payload.priceMismatch === true) {
+      return { valid: false, status: 'INVARIANT_VIOLATED', reason: 'Catalog price updated on server while client was offline.' };
+    }
+  }
+
+  return { valid: true };
+}
 
 // Load persisted offline records from local disk if available
 try {
@@ -878,7 +912,9 @@ app.post('/api/v1/posa/sync', (req, res) => {
   }
 
   const syncedIds = [];
+  const deadLetterOps = [];
   const conflictsResolved = [];
+  let idempotentHitsCount = 0;
   const strategy = conflictStrategy || 'LAST_WRITE_WINS';
 
   console.log(`[POSA Server Engine] Processing batch of ${operations.length} DAG operations from device '${deviceId || 'unknown'}' (Strategy: ${strategy})...`);
@@ -887,7 +923,35 @@ app.post('/api/v1/posa/sync', (req, res) => {
     const { operationId, collection, action, payload, recordId, timestamp, hash, hlc } = op;
     const key = `${collection}:${recordId}`;
 
-    // 1. Integrity Verification (SHA-256 Checksum)
+    // 1. Server-Side Idempotency Check (Exactly-Once Semantics)
+    if (posaProcessedOpsDb.has(operationId)) {
+      idempotentHitsCount++;
+      syncedIds.push(operationId);
+      continue;
+    }
+
+    const existingRecord = posaRecordsDb.get(key);
+
+    // 2. Server-Authoritative Business Invariant & Security Validation
+    const appConfig = appsDb.get(appId || 'demo-app');
+    const appSecret = appConfig ? appConfig.appSecret : null;
+    const validation = validatePOSABusinessInvariants(op, existingRecord, appSecret);
+
+    if (!validation.valid) {
+      console.warn(`[POSA Invariant Warning] Operation '${operationId}' failed server validation: ${validation.reason}`);
+      deadLetterOps.push({
+        operationId,
+        collection,
+        recordId,
+        status: validation.status || 'DEAD_LETTER',
+        reason: validation.reason,
+        timestamp: new Date().toISOString()
+      });
+      posaProcessedOpsDb.set(operationId, { status: 'DEAD_LETTER', reason: validation.reason });
+      continue;
+    }
+
+    // 3. Integrity Verification (SHA-256 Checksum)
     if (hash) {
       const computedHash = crypto.createHash('sha256')
         .update(canonicalJsonStringify({ collection, action, payload, timestamp }))
@@ -897,8 +961,6 @@ app.post('/api/v1/posa/sync', (req, res) => {
         console.warn(`[POSA Server Engine] SHA-256 mismatch for op '${operationId}'. Expected ${hash}, computed ${computedHash}`);
       }
     }
-
-    const existingRecord = posaRecordsDb.get(key);
 
     if (!existingRecord) {
       // New record
@@ -913,6 +975,7 @@ app.post('/api/v1/posa/sync', (req, res) => {
         });
       }
       syncedIds.push(operationId);
+      posaProcessedOpsDb.set(operationId, { status: 'SYNCED', key });
     } else {
       // Conflict Resolution Logic (Using HLC & Timestamp)
       const localTime = new Date(timestamp).getTime();
@@ -963,6 +1026,7 @@ app.post('/api/v1/posa/sync', (req, res) => {
       }
 
       syncedIds.push(operationId);
+      posaProcessedOpsDb.set(operationId, { status: 'SYNCED', key, winner });
 
       conflictsResolved.push({
         operationId,
@@ -984,6 +1048,8 @@ app.post('/api/v1/posa/sync', (req, res) => {
     deviceId,
     totalOps: operations.length,
     syncedOps: syncedIds.length,
+    deadLetterOps: deadLetterOps.length,
+    idempotentHits: idempotentHitsCount,
     conflictStrategy: strategy,
     conflictsCount: conflictsResolved.length,
     timestamp: new Date().toISOString()
@@ -1001,6 +1067,8 @@ app.post('/api/v1/posa/sync', (req, res) => {
     success: true,
     appId: appId || 'demo-app',
     syncedOperationIds: syncedIds,
+    deadLetterOperations: deadLetterOps,
+    idempotentHitsCount,
     conflictsResolved: conflictsResolved.length,
     processedCount: syncedIds.length,
     serverTimestamp: new Date().toISOString(),

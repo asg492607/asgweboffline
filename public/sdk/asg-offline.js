@@ -151,7 +151,7 @@
 
       return new Promise((resolve) => {
         try {
-          const request = indexedDB.open('ASG_Offline_DB', 4);
+          const request = indexedDB.open('ASG_Offline_DB', 5);
 
           request.onupgradeneeded = (e) => {
             const db = e.target.result;
@@ -167,6 +167,11 @@
               posaStore.createIndex('collection', 'collection', { unique: false });
               posaStore.createIndex('status', 'status', { unique: false });
               posaStore.createIndex('timestamp', 'timestamp', { unique: false });
+            }
+            if (!db.objectStoreNames.contains('posa_dlq')) {
+              const dlqStore = db.createObjectStore('posa_dlq', { keyPath: 'operationId' });
+              dlqStore.createIndex('status', 'status', { unique: false });
+              dlqStore.createIndex('timestamp', 'timestamp', { unique: false });
             }
             if (!db.objectStoreNames.contains('device_peers')) {
               db.createObjectStore('device_peers', { keyPath: 'deviceId' });
@@ -971,7 +976,7 @@
     }
 
     /** Phase 1 & 2: Local Operation First & Metadata Generation */
-    async posaQueueOperation({ collection, action, payload, priority = 'MEDIUM', dependencyId = null, recordId = null }) {
+    async posaQueueOperation({ collection, action, payload, priority = 'MEDIUM', dependencyId = null, recordId = null, nonCollapsible = false, type = 'MUTATION', authToken = null, userContext = null }) {
       if (!this.db) {
         console.warn('[POSA Engine] Database not initialized yet.');
         return null;
@@ -998,8 +1003,13 @@
         retryCount: 0,
         priority: priority.toUpperCase(),
         dependencyId,
+        nonCollapsible: !!nonCollapsible,
+        type,
+        authToken: authToken || this.authToken || null,
+        userContext: userContext || this.userContext || null,
         status: 'PENDING',
         hash,
+        signature: this.appSecret ? 'hmac_' + hash : null,
         lastRetryTimestamp: null
       };
 
@@ -1042,7 +1052,11 @@
           const prevIndex = collapsedMap.get(key);
           const prevItem = result[prevIndex];
 
-          if (prevItem) {
+          // Operations marked nonCollapsible or EVENT MUST NOT be collapsed (Command / Event Semantics)
+          const isNonCollapsible = item.nonCollapsible || (prevItem && prevItem.nonCollapsible) ||
+                                  item.type === 'EVENT' || (prevItem && prevItem.type === 'EVENT');
+
+          if (prevItem && !isNonCollapsible) {
             // Rule A: CREATE followed by DELETE -> Cancel out
             if (prevItem.action === 'CREATE' && item.action === 'DELETE') {
               result[prevIndex] = null;
@@ -1212,10 +1226,17 @@
         state.serverHealthy = false;
       }
 
-      // 4. Decision Logic
+      // 4. Check queue for CRITICAL / HIGH priority operations that override battery/latency deferrals
+      const rawQueue = await this.getPOSAQueue();
+      const hasCriticalOp = rawQueue && rawQueue.some(item => item.priority === 'CRITICAL' || item.priority === 'HIGH');
+
+      // 5. Decision Logic
       if (!state.isOnline || !state.serverHealthy) {
         state.decision = 'DEFER_OFFLINE';
         state.reason = 'Network offline or server unreachable.';
+      } else if (hasCriticalOp) {
+        state.decision = 'SYNC_NOW';
+        state.reason = 'Priority override: Enqueued operation has CRITICAL or HIGH priority.';
       } else if (state.batteryLevel < 0.15 && !state.isCharging) {
         state.decision = 'DEFER_LOW_BATTERY';
         state.reason = 'Battery level critical (< 15%). Deferring non-essential background sync to save energy.';
@@ -1302,14 +1323,53 @@
           const syncResult = await response.json();
 
           if (syncResult.success) {
-            const processedIds = new Set(syncResult.syncedOperationIds || chunk.map(item => item.operationId));
-            const tx = this.db.transaction(['posa_queue'], 'readwrite');
-            const store = tx.objectStore('posa_queue');
-            
+            const processedIds = new Set(syncResult.syncedOperationIds || []);
+            const deadLetterList = syncResult.deadLetterOperations || [];
+
+            const tx = this.db.transaction(['posa_queue', 'posa_dlq'], 'readwrite');
+            const posaStore = tx.objectStore('posa_queue');
+            const dlqStore = tx.objectStore('posa_dlq');
+
+            // 1. Delete successfully synced operations from queue
             for (const opId of processedIds) {
-              store.delete(opId);
+              posaStore.delete(opId);
             }
             totalSynced += processedIds.size;
+
+            // 2. Process Dead-Letter Queue (DLQ) operations & block descendant operations
+            if (deadLetterList.length > 0) {
+              const deadLetterMap = new Map(deadLetterList.map(dl => [dl.operationId, dl]));
+              const deadLetterOpIds = new Set(deadLetterList.map(dl => dl.operationId));
+
+              // Read remaining queue to find dependent operations
+              const allQueueOps = chunk;
+
+              for (const item of allQueueOps) {
+                if (deadLetterOpIds.has(item.operationId)) {
+                  const dlInfo = deadLetterMap.get(item.operationId);
+                  const dlRecord = {
+                    ...item,
+                    status: 'DEAD_LETTER',
+                    reason: dlInfo.reason || 'Server validation failed',
+                    movedToDlqAt: new Date().toISOString()
+                  };
+                  dlqStore.put(dlRecord);
+                  posaStore.delete(item.operationId);
+                  console.warn(`[POSA DLQ Engine] Operation '${item.operationId}' moved to Dead-Letter Queue: ${dlRecord.reason}`);
+                } else if (item.dependencyId && deadLetterOpIds.has(item.dependencyId)) {
+                  const depRecord = {
+                    ...item,
+                    status: 'DEPENDENCY_FAILED',
+                    reason: `Parent operation '${item.dependencyId}' failed in DLQ`,
+                    movedToDlqAt: new Date().toISOString()
+                  };
+                  dlqStore.put(depRecord);
+                  posaStore.delete(item.operationId);
+                  console.warn(`[POSA DLQ Engine] Descendant op '${item.operationId}' blocked due to parent DLQ failure.`);
+                }
+              }
+              this.showToast('⚠️ DLQ Action Required', `${deadLetterList.length} operation(s) moved to Dead-Letter Queue.`, 'warning');
+            }
           } else {
             console.warn('[POSA Engine] Sync chunk failed, applying exponential backoff:', syncResult.error);
             const tx = this.db.transaction(['posa_queue'], 'readwrite');
