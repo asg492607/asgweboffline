@@ -3,32 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ASG Offline Web Service - Offline Web Engine & API Service</title>
-  <meta name="description" content="API-based service and client SDK to turn any web application into a fast, offline-ready experience with Service Worker caching and background sync.">
+  <title>ASG Offline Web Service - All-In-One Offline Generator</title>
+  <meta name="description" content="Generate a complete, 1-step offline web engine and API sync solution for any web application.">
   <link rel="stylesheet" href="/css/dashboard.css">
   
   <!-- Self-Host ASG Offline SDK Demonstration -->
   <script 
-    src="https://asgweboffline.onrender.com/sdk/asg-offline.js" 
-    data-app-id="asgweboffline-onrender-com-offline"
+    src="/sdk/asg-offline.js" 
+    data-app-id="asgweboffline-app"
     data-strategy="stale-while-revalidate">
-  </script>
-
-  <script>
-    // Monitor connection & handle offline events
-    window.addEventListener('load', () => {
-      if (window.ASGOffline) {
-        console.log('⚡ ASG Offline Service initialized for asgweboffline.onrender.com');
-        
-        window.ASGOffline.onStatusChange((isOnline) => {
-          if (!isOnline) {
-            console.log('📡 Website is now running completely OFFLINE via browser cache!');
-          } else {
-            console.log('🟢 Website re-connected to network!');
-          }
-        });
-      }
-    });
   </script>
 </head>
 <body>
@@ -38,633 +21,100 @@
     <div class="brand">
       <div class="brand-icon">📡</div>
       <div>
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-          <span class="brand-title">ASG Offline Enterprise</span>
-          <span class="brand-badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8;">🏢 Acme Enterprise Corp</span>
-        </div>
+        <span class="brand-title">ASG Offline Web Service</span>
+        <span class="brand-badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; margin-left: 8px;">⚡ All-In-One Engine</span>
       </div>
     </div>
 
-    <!-- Enterprise Multi-Project & RBAC Selectors -->
-    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Active App:</span>
-        <select id="header-project-select" class="form-control" style="padding: 4px 10px; font-size: 0.8rem; height: 32px; min-width: 140px; background: #1e293b;">
-          <option value="demo-app" selected>🌐 Main Website</option>
-          <option value="dashboard-app">📊 Customer Dashboard</option>
-          <option value="crm-app">💼 Sales CRM Portal</option>
-          <option value="admin-portal-app">🔒 Admin Control Center</option>
-        </select>
-      </div>
-
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">RBAC Role:</span>
-        <select id="header-role-select" class="form-control" style="padding: 4px 10px; font-size: 0.8rem; height: 32px; background: #1e293b; color: var(--accent-emerald); font-weight: bold;">
-          <option value="Admin" selected>👑 Admin</option>
-          <option value="Developer">💻 Developer</option>
-          <option value="Viewer">👁️ Viewer</option>
-          <option value="Analytics">📊 Analytics</option>
-        </select>
-      </div>
-
-      <div class="status-indicator">
-        <span class="dot"></span>
-        <span>Engine Active</span>
-      </div>
+    <div class="status-indicator">
+      <span class="dot"></span>
+      <span>Engine Active</span>
     </div>
   </header>
 
-  <main class="container">
+  <main class="container" style="max-width: 1000px; margin: 0 auto; padding: 2rem 1rem;">
     <!-- Hero Header -->
-    <section class="hero">
-      <h1>Make Any Website <span>Work Offline & Load Fast</span></h1>
-      <p>Enter any website URL below to instantly generate API endpoints, HTML, CSS, JavaScript, React, and Service Worker code to make your web app load ultra-fast and work offline everywhere.</p>
+    <section class="hero" style="text-align: center; margin-bottom: 2.5rem;">
+      <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.75rem; background: linear-gradient(135deg, #f8fafc, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+        Make Any Web App <span style="background: linear-gradient(135deg, #6366f1, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Work Offline & Sync Seamlessly</span>
+      </h1>
+      <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 650px; margin: 0 auto;">
+        Enter your Frontend Web Application URL and Backend API URL below to get a complete, all-in-one offline code solution.
+      </p>
     </section>
 
-    <!-- 1-Click URL Offline Generator Card -->
+    <!-- 1-Click All-In-One Generator Card -->
     <div class="glass-card" style="margin-bottom: 2.5rem; border-color: var(--border-accent); box-shadow: 0 10px 40px var(--primary-glow);">
-      <div class="card-title">
-        <span>⚡ Instant Website URL Offline Engine & Code Generator</span>
-        <span class="brand-badge">Auto API & Code Generator</span>
+      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+        <span style="font-size: 1.2rem; font-weight: 700;">⚡ Instant All-In-One Generator</span>
+        <span class="brand-badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">GET & POST API Ready</span>
       </div>
-      <p class="card-subtitle">Enter your Frontend App URL and Backend API Base URL below to generate tailored offline ServiceWorker, IndexedDB, React, and HTML integration code.</p>
+      <p class="card-subtitle" style="margin-bottom: 1.5rem;">
+        Provide your URLs to generate a tailored offline Service Worker, IndexedDB queueing system, and Express backend receiver API.
+      </p>
 
-      <form id="url-generator-form" style="display: flex; gap: 12px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: flex-end;">
-        <div style="flex: 1; min-width: 250px;">
+      <form id="url-generator-form" style="display: flex; gap: 14px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: flex-end;">
+        <div style="flex: 1; min-width: 280px;">
           <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 600;">🌐 Frontend Web Application URL</label>
           <input 
             type="url" 
             id="gen-url-input" 
             class="form-control" 
-            placeholder="e.g. https://my-app.com or http://localhost:3000" 
+            placeholder="e.g. https://my-awesome-site.com" 
             value="https://my-awesome-site.com" 
             style="width: 100%; font-size: 0.95rem; padding: 12px 16px;" 
             required
           >
         </div>
 
-        <div style="flex: 1; min-width: 250px;">
+        <div style="flex: 1; min-width: 280px;">
           <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 600;">⚡ Backend API Base URL</label>
           <input 
             type="url" 
             id="gen-backend-api-input" 
             class="form-control" 
-            placeholder="e.g. https://api.my-app.com or http://localhost:5000/api" 
+            placeholder="e.g. https://api.my-awesome-site.com" 
             value="https://api.my-awesome-site.com" 
             style="width: 100%; font-size: 0.95rem; padding: 12px 16px;" 
             required
           >
         </div>
 
-        <button type="submit" class="btn btn-primary" style="padding: 12px 24px; font-size: 0.95rem; height: 45px;">
-          🚀 Generate Full-Stack Offline Code
+        <button type="submit" class="btn btn-primary" style="padding: 12px 24px; font-size: 0.95rem; height: 45px; font-weight: 700; white-space: nowrap;">
+          🚀 Generate All-In-One Solution
         </button>
       </form>
 
       <!-- Dynamic Output Snippet Tabs -->
       <div id="gen-results" style="display: block;">
         <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-glass); padding-bottom: 8px; margin-bottom: 1rem; overflow-x: auto;">
-          <button class="btn btn-secondary snippet-tab active" data-snippet="allInOne" style="background: rgba(99, 102, 241, 0.25); border: 1px solid var(--accent-indigo); color: #818cf8; font-weight: bold;">🌟 All-In-One Solution</button>
+          <button class="btn btn-secondary snippet-tab active" data-snippet="allInOne" style="background: rgba(99, 102, 241, 0.25); border: 1px solid var(--accent-indigo); color: #818cf8; font-weight: bold;">🌟 All-In-One Frontend Bundle</button>
           <button class="btn btn-secondary snippet-tab" data-snippet="backend">💻 Backend Receiver API</button>
-          <button class="btn btn-secondary snippet-tab" data-snippet="vanilla">📄 Vanilla HTML / JS</button>
-          <button class="btn btn-secondary snippet-tab" data-snippet="react">⚛️ React / Next.js Code</button>
-          <button class="btn btn-secondary snippet-tab" data-snippet="vue">🟢 Vue 3 Code</button>
-          <button class="btn btn-secondary snippet-tab" data-snippet="apiSync">⚡ 1-Line DB & API Sync</button>
-          <button class="btn btn-secondary snippet-tab" data-snippet="sw">⚙️ Custom sw.js File</button>
+          <button class="btn btn-secondary snippet-tab" data-snippet="react">⚛️ React / Next.js</button>
+          <button class="btn btn-secondary snippet-tab" data-snippet="vue">🟢 Vue 3</button>
+          <button class="btn btn-secondary snippet-tab" data-snippet="sw">⚙️ Custom sw.js</button>
           <button class="btn btn-secondary snippet-tab" data-snippet="manifest">📱 manifest.json</button>
         </div>
 
-        <div class="code-box" style="margin-top: 0;">
-          <button class="btn btn-secondary copy-btn" data-copy="gen-code-display">Copy Code</button>
-          <pre id="gen-code-display" style="min-height: 200px; max-height: 380px;">// Enter your Frontend and Backend URLs above and click "Generate Full-Stack Offline Code" to view tailored code!</pre>
+        <div class="code-box" style="margin-top: 0; position: relative;">
+          <button class="btn btn-secondary copy-btn" data-copy="gen-code-display" style="position: absolute; top: 12px; right: 12px; font-size: 0.8rem; padding: 6px 12px;">Copy Code</button>
+          <pre id="gen-code-display" style="min-height: 240px; max-height: 420px; font-size: 0.85rem; line-height: 1.5; color: #f1f5f9; padding-top: 2rem;">// Enter your Frontend and Backend URLs above and click "Generate All-In-One Solution"!</pre>
         </div>
       </div>
     </div>
 
-    <!-- Navigation Tabs -->
-    <div class="tabs">
-      <button class="tab-btn active" data-tab="tab-config">⚙️ App Configurator</button>
-      <button class="tab-btn" data-tab="tab-posa" style="background: rgba(99, 102, 241, 0.25); border: 1px solid var(--accent-indigo); color: #818cf8; font-weight: bold;">⚡ POSA & ASE Algorithm Engine</button>
-      <button class="tab-btn" data-tab="tab-projects">🏢 Company Projects</button>
-      <button class="tab-btn" data-tab="tab-team">👥 Team & RBAC</button>
-      <button class="tab-btn" data-tab="tab-alerts">🚨 Health & Alerts</button>
-      <button class="tab-btn" data-tab="tab-snippets">💻 Integration Snippets</button>
-      <button class="tab-btn" data-tab="tab-sandbox">🧪 Live Offline Sandbox</button>
-      <button class="tab-btn" data-tab="tab-telemetry">📊 Analytics & Telemetry</button>
-      <button class="tab-btn" data-tab="tab-devtools">🔌 Chrome Extension</button>
-    </div>
-
-    <!-- TAB 1: APP CONFIGURATOR & CACHE STRATEGY BUILDER -->
-    <div id="tab-config" class="tab-content active">
-      <div class="grid-2">
-        <div class="glass-card">
-          <div class="card-title">
-            <span>Application Settings</span>
-            <span style="font-size: 0.8rem; color: var(--primary-light);">POST /api/v1/apps</span>
-          </div>
-          <p class="card-subtitle">Configure dynamic caching rules and service worker settings for your web app.</p>
-
-          <form id="config-form">
-            <div class="form-group">
-              <label for="cfg-app-id">Application Identifier (App ID)</label>
-              <input type="text" id="cfg-app-id" class="form-control" value="demo-app" required>
-            </div>
-
-            <div class="form-group">
-              <label for="cfg-app-name">Application Name</label>
-              <input type="text" id="cfg-app-name" class="form-control" value="My Offline Ready Web App" required>
-            </div>
-
-            <div class="form-group">
-              <label for="cfg-domain">Target Domain / Hostname</label>
-              <input type="text" id="cfg-domain" class="form-control" value="localhost:3000">
-            </div>
-
-            <div class="form-group">
-              <label for="cfg-strategy">Primary Caching Strategy</label>
-              <select id="cfg-strategy" class="form-control">
-                <option value="stale-while-revalidate" selected>Stale-While-Revalidate (Fastest + Auto Update)</option>
-                <option value="cache-first">Cache-First (Static Assets & Media Heavy)</option>
-                <option value="network-first">Network-First (Dynamic APIs with Offline Fallback)</option>
-              </select>
-            </div>
-
-            <div style="display: flex; gap: 20px; margin-bottom: 1.25rem;">
-              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer;">
-                <input type="checkbox" id="cfg-bg-sync" checked> Enable IndexedDB Background Sync
-              </label>
-              <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer;">
-                <input type="checkbox" id="cfg-notifications" checked> Show Connection Toasts
-              </label>
-            </div>
-
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Save Configuration</button>
-          </form>
-        </div>
-
-        <div class="glass-card">
-          <div class="card-title">Precache Assets & Offline Fallback HTML</div>
-          <p class="card-subtitle">Specify explicit URLs to precache upon app load and customize offline page.</p>
-
-          <div class="form-group">
-            <label for="cfg-precache">Precache URL List (One per line)</label>
-            <textarea id="cfg-precache" class="form-control" placeholder="/&#10;/index.html&#10;/css/dashboard.css&#10;/js/dashboard.js"></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="cfg-fallback-html">Offline HTML Fallback Page Template</label>
-            <textarea id="cfg-fallback-html" class="form-control" style="min-height: 140px;"></textarea>
-          </div>
-        </div>
+    <!-- API Reference Card -->
+    <div class="glass-card">
+      <div class="card-title">
+        <span>🔗 REST API Single Endpoint Reference</span>
+        <span class="brand-badge">GET & POST /api/v1/all-in-one</span>
       </div>
-    </div>
+      <p class="card-subtitle">
+        You can also programmatically generate the full-stack offline solution directly via HTTP requests:
+      </p>
 
-    <!-- TAB POSA & ADAPTIVE SYNC ENGINE -->
-    <div id="tab-posa" class="tab-content">
-      <!-- POSA Engine Hero -->
-      <div class="glass-card" style="margin-bottom: 1.5rem; border-color: var(--accent-indigo); box-shadow: 0 10px 40px rgba(99, 102, 241, 0.25);">
-        <div class="card-title">
-          <span>⚡ ASG Persistent Offline Synchronization Algorithm (POSA) & Adaptive Sync Engine (ASE)</span>
-          <span class="brand-badge" style="background: #4f46e5; color: #fff;">10-Phase Offline Infrastructure</span>
-        </div>
-        <p class="card-subtitle">Enables applications to run completely offline for <strong>days or weeks without internet</strong> while preserving 100% relational data integrity, SHA-256 cryptographic verification, DAG dependency ordering, and intelligent operation collapsing.</p>
-
-        <div style="display: flex; gap: 12px; margin-top: 1.25rem; flex-wrap: wrap; align-items: center;">
-          <button id="posa-btn-simulate-3days" class="btn btn-primary" style="padding: 10px 20px; font-weight: bold; background: linear-gradient(135deg, #4f46e5, #818cf8);">
-            🚀 Run 3-Day Offline Stream Simulator
-          </button>
-          <button id="posa-btn-simulate-p2p" class="btn btn-primary" style="padding: 10px 20px; font-weight: bold; background: linear-gradient(135deg, #06b6d4, #3b82f6);">
-            📡 Simulate 2-Device Offline P2P Sync
-          </button>
-          <button id="posa-btn-trigger-sync" class="btn btn-secondary">
-            🔄 Force ASE Sync Evaluation
-          </button>
-          <button id="posa-btn-clear-queue" class="btn btn-amber">
-            🗑️ Clear Local POSA Queue
-          </button>
-          <div style="margin-left: auto; font-size: 0.85rem; color: var(--accent-cyan); font-weight: 600;">
-            🛡️ SHA-256 Checksum Protection Active
-          </div>
-        </div>
-      </div>
-
-      <!-- ASE (Adaptive Sync Engine) Live Status Gauge Grid -->
-      <div class="grid-4" style="margin-bottom: 1.5rem;">
-        <div class="metric-card">
-          <div class="metric-lbl">ASE Sync Decision</div>
-          <div id="ase-val-decision" class="metric-val" style="color: var(--accent-emerald); font-size: 1.25rem;">SYNC_NOW</div>
-          <div id="ase-lbl-reason" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Optimal network & battery state</div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-lbl">Network & Latency</div>
-          <div id="ase-val-net" class="metric-val" style="font-size: 1.25rem;">🟢 WiFi (32ms)</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">RTT Stability: High</div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-lbl">Device Battery & Power</div>
-          <div id="ase-val-battery" class="metric-val" style="font-size: 1.25rem;">⚡ 100% (Charging)</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Power Throttle: Disabled</div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-lbl">Payload Collapsing Savings</div>
-          <div id="posa-val-savings" class="metric-val" style="color: var(--accent-cyan); font-size: 1.25rem;">68.4% Saved</div>
-          <div id="posa-lbl-savings-desc" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Redundant updates collapsed</div>
-        </div>
-      </div>
-
-      <!-- Conflict Strategy & DAG Inspector Grid -->
-      <div class="grid-2" style="margin-bottom: 1.5rem;">
-        <div class="glass-card">
-          <div class="card-title">Phase 4: Conflict Resolution Engine Policy</div>
-          <p class="card-subtitle">Configure how multi-device concurrent updates are resolved upon synchronization.</p>
-
-          <div class="form-group">
-            <label for="posa-select-conflict-strategy">Active Conflict Resolution Strategy</label>
-            <select id="posa-select-conflict-strategy" class="form-control">
-              <option value="LAST_WRITE_WINS" selected>⏳ Last Write Wins (LWW - Timestamp Based)</option>
-              <option value="SERVER_WINS">☁️ Server Wins (Authority Override)</option>
-              <option value="CLIENT_WINS">📱 Client Wins (Local Device Priority)</option>
-              <option value="MERGE_FIELDS">🔀 Field-Level Merge (JSON Field Merging)</option>
-              <option value="MANUAL_RESOLUTION">⚠️ Manual Resolution (Queue for Review)</option>
-            </select>
-          </div>
-
-          <div class="code-box" style="margin-top: 0.75rem;">
-            <pre id="posa-conflict-status-log" style="min-height: 100px; max-height: 160px;">// Recent server conflict resolutions will be logged here...</pre>
-          </div>
-        </div>
-
-        <div class="glass-card">
-          <div class="card-title">Phase 3: DAG Dependency Graph & Topological Order</div>
-          <p class="card-subtitle">Visualizes parent-child order (e.g. Customer -> Order -> Payment).</p>
-          <div class="code-box" style="margin-top: 0.75rem;">
-            <pre id="posa-dag-visualizer" style="min-height: 180px; max-height: 240px;">// POSA DAG Topological Execution Plan will render here...</pre>
-          </div>
-        </div>
-      </div>
-
-      <!-- Multi-Device Offline P2P Subnet & HLC Sync Engine -->
-      <div class="glass-card" style="margin-bottom: 1.5rem;">
-        <div class="card-title">
-          <span>📡 Multi-Device Offline P2P Subnet & HLC Sync Engine</span>
-          <span id="posa-peers-badge" class="brand-badge" style="background: var(--accent-cyan); color: #0f172a;">1 Active Local Peer</span>
-        </div>
-        <p class="card-subtitle">Discovers nearby offline devices over Local Subnet/P2P, exchanges Hybrid Logical Clock (HLC) vectors, and resolves multi-device offline conflicts with zero network connectivity.</p>
-
-        <div class="grid-2" style="margin-top: 1rem;">
-          <div>
-            <label style="font-weight: 600; color: var(--text-muted); font-size: 0.85rem;">Local Subnet Peers Discovered</label>
-            <div class="code-box" style="margin-top: 0.5rem;">
-              <pre id="posa-peers-list-display" style="min-height: 110px; max-height: 150px;">// Discovered P2P peer devices on local subnet/tab will be listed here...</pre>
-            </div>
-          </div>
-          <div>
-            <label style="font-weight: 600; color: var(--text-muted); font-size: 0.85rem;">HLC Multi-Device Merge Log</label>
-            <div class="code-box" style="margin-top: 0.5rem;">
-              <pre id="posa-p2p-merge-log" style="min-height: 110px; max-height: 150px;">// Multi-device HLC merges and conflict-free resolution log...</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- POSA Live Queue Inspector -->
-      <div class="glass-card">
-        <div class="card-title">
-          <span>Phase 2 & 9: Persistent IndexedDB Queue Inspector</span>
-          <span id="posa-queue-badge" class="brand-badge">0 Items Queued</span>
-        </div>
-        <p class="card-subtitle">Inspect raw operation metadata, cryptographic SHA-256 hashes, device IDs, and retry backoff states.</p>
-
-        <div class="code-box">
-          <pre id="posa-queue-inspector-display" style="min-height: 180px; max-height: 320px;">// Local posa_queue is currently empty. Click "Run 3-Day Offline Stream Simulator" to populate simulated multi-day offline operations!</pre>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB 2: INTEGRATION SNIPPETS & GENERATOR -->
-    <div id="tab-snippets" class="tab-content">
-      <div class="grid-2">
-        <div class="glass-card">
-          <div class="card-title">1-Line Embed Script (HTML)</div>
-          <p class="card-subtitle">Paste this script tag into the &lt;head&gt; of your website to instantly enable offline capabilities.</p>
-          <div class="code-box">
-            <button class="btn btn-secondary copy-btn" data-copy="code-script">Copy</button>
-            <pre id="code-script"></pre>
-          </div>
-        </div>
-
-        <div class="glass-card">
-          <div class="card-title">NPM / ES Module Integration</div>
-          <p class="card-subtitle">Use in React, Next.js, Vue, or modern JavaScript bundlers.</p>
-          <div class="code-box">
-            <button class="btn btn-secondary copy-btn" data-copy="code-npm">Copy</button>
-            <pre id="code-npm"></pre>
-          </div>
-        </div>
-      </div>
-
-      <div class="glass-card" style="margin-top: 1.5rem;">
-        <div class="card-title">Web App PWA Manifest Generator</div>
-        <p class="card-subtitle">Automatically generated manifest JSON for PWA installability.</p>
-        <div class="code-box">
-          <button class="btn btn-secondary copy-btn" data-copy="code-manifest">Copy</button>
-          <pre id="code-manifest"></pre>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB 3: LIVE INTERACTIVE OFFLINE SANDBOX -->
-    <div id="tab-sandbox" class="tab-content">
-      <div class="glass-card" style="margin-bottom: 1.5rem;">
-        <div class="card-title">
-          <span>Live Interactive Sandbox Simulator</span>
-          <div style="display: flex; gap: 10px;">
-            <button id="sandbox-toggle-net" class="btn btn-amber">🔌 Simulate Offline Mode</button>
-            <button id="sandbox-inspect-cache" class="btn btn-secondary">📦 Inspect Service Worker Cache</button>
-            <button id="sandbox-offline-form" class="btn btn-secondary">📋 Test Offline Action Queue</button>
-          </div>
-        </div>
-        <p class="card-subtitle">Test how your website behaves when connection is lost or offline caching is active.</p>
-
-        <!-- Simulated Browser Frame -->
-        <div class="sandbox-window">
-          <div class="sandbox-toolbar">
-            <div class="window-dots">
-              <span class="w-dot red"></span>
-              <span class="w-dot yellow"></span>
-              <span class="w-dot green"></span>
-            </div>
-            <div class="url-bar">https://my-app.com (ASG Offline Protected)</div>
-            <div style="font-size: 0.8rem; color: var(--text-muted);">ASG SW Engine v1.0</div>
-          </div>
-
-          <div class="sandbox-body">
-            <span id="sandbox-badge" class="sandbox-status-badge online">ONLINE (Live Network)</span>
-            <div id="sandbox-preview">
-              <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">⚡🌐</div>
-              <h3 style="color: var(--accent-emerald);">Connected to Live Server</h3>
-              <p style="color: var(--text-muted); max-width: 420px; margin-top: 0.5rem;">Assets are being served fast. Click "Simulate Offline Mode" above to cut simulated network connection and verify offline cache fallback.</p>
-            </div>
-          </div>
-        </div>
-      <!-- In-Browser Offline Database (SQLite / IndexedDB) Test Card -->
-      <div class="glass-card" style="margin-top: 1.5rem; border-color: var(--primary-glow);">
-        <div class="card-title">
-          <span>💾 In-Browser Offline Database & API Sandbox</span>
-          <span class="brand-badge" style="background: var(--accent-cyan); color: #000;">IndexedDB & SW API Interceptor</span>
-        </div>
-        <p class="card-subtitle">Test creating database records locally on your device. When offline, ServiceWorker & Client SDK query local in-browser storage!</p>
-
-        <form id="db-insert-form" style="display: flex; gap: 12px; margin-bottom: 1.5rem; flex-wrap: wrap;">
-          <input type="text" id="db-record-title" class="form-control" placeholder="Record Title (e.g. Offline Task or Order)" style="flex: 2; min-width: 200px;" required>
-          <select id="db-record-category" class="form-control" style="flex: 1; min-width: 140px;">
-            <option value="General">General</option>
-            <option value="Priority">Priority</option>
-            <option value="Financial">Financial</option>
-            <option value="Inventory">Inventory</option>
-          </select>
-          <button type="submit" class="btn btn-primary">➕ Add to In-Browser DB</button>
-        </form>
-
-        <div style="display: flex; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap;">
-          <button id="btn-fetch-api" class="btn btn-secondary">📡 Fetch /api/v1/demo-records</button>
-          <button id="btn-load-local-db" class="btn btn-secondary">💾 Query Local Browser DB</button>
-          <button id="btn-clear-local-db" class="btn btn-amber">🗑️ Clear Local DB</button>
-        </div>
-
-        <div class="code-box" style="margin-top: 0;">
-          <pre id="db-output-display" style="min-height: 140px; max-height: 280px;">// In-browser DB logs & query output will appear here...</pre>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB 4: ANALYTICS & TELEMETRY DASHBOARD -->
-    <div id="tab-telemetry" class="tab-content">
-      <div class="grid-4" style="margin-bottom: 1.5rem;">
-        <div class="metric-card">
-          <div class="metric-lbl">Total API / App Requests</div>
-          <div id="stat-total-req" class="metric-val">1,420</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-lbl">Cache Hits (Instant Load)</div>
-          <div id="stat-cache-hits" class="metric-val" style="color: var(--primary-light);">1,250</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-lbl">Cache Hit Efficiency</div>
-          <div id="stat-ratio" class="metric-val" style="color: var(--accent-emerald);">88%</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-lbl">Bandwidth Saved</div>
-          <div id="stat-bandwidth" class="metric-val" style="color: var(--accent-cyan);">427.5 MB</div>
-        </div>
-      </div>
-
-      <div class="grid-2" style="margin-bottom: 1.5rem;">
-        <div class="metric-card">
-          <div class="metric-lbl">💾 Cache Storage Size</div>
-          <div id="stat-cache-size" class="metric-val" style="color: #38bdf8;">1.2 MB</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-lbl">📱 Connected Active Sessions</div>
-          <div id="stat-connected-devices" class="metric-val" style="color: var(--accent-emerald);">1 Active</div>
-        </div>
-      </div>
-
-      <div class="glass-card">
-        <div class="card-title">Real-Time Telemetry Event Stream</div>
-        <p class="card-subtitle">Live stream of cache hits, network hits, offline fallbacks, and background syncs.</p>
-        <ul id="telemetry-logs" class="log-list">
-          <li class="log-item"><span style="color: var(--text-muted);">Loading telemetry stream...</span></li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- ENTERPRISE TAB 1: MULTI-PROJECT COMPANY HUB -->
-    <div id="tab-projects" class="tab-content">
-      <div class="glass-card" style="margin-bottom: 1.5rem;">
-        <div class="card-title">
-          <span>🏢 Acme Enterprise Corp - Multi-Project Portfolio</span>
-          <button id="btn-add-project" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.85rem;">➕ Add New Project</button>
-        </div>
-        <p class="card-subtitle">Manage offline configuration, caching rules, and performance metrics across all company web applications from one central dashboard.</p>
-
-        <div id="projects-grid" class="grid-2" style="margin-top: 1.5rem;">
-          <div class="glass-card" style="background: rgba(15, 23, 42, 0.7);">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-              <h3 style="margin: 0; color: var(--primary-light);">🌐 Main Marketing Website</h3>
-              <span class="brand-badge" style="background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald);">ONLINE</span>
-            </div>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">ID: <code>demo-app</code> | Strategy: <code>stale-while-revalidate</code></p>
-            <div style="display: flex; gap: 14px; font-size: 0.85rem; color: var(--text-main);">
-              <div>👥 <strong>142</strong> Offline Users</div>
-              <div>💾 <strong>427.5 MB</strong> Saved</div>
-              <div>⚠️ <strong>0</strong> Errors</div>
-            </div>
-          </div>
-
-          <div class="glass-card" style="background: rgba(15, 23, 42, 0.7);">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-              <h3 style="margin: 0; color: var(--primary-light);">📊 Customer Dashboard</h3>
-              <span class="brand-badge" style="background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald);">ONLINE</span>
-            </div>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">ID: <code>dashboard-app</code> | Strategy: <code>stale-while-revalidate</code></p>
-            <div style="display: flex; gap: 14px; font-size: 0.85rem; color: var(--text-main);">
-              <div>👥 <strong>89</strong> Offline Users</div>
-              <div>💾 <strong>215.0 MB</strong> Saved</div>
-              <div>⚠️ <strong>0</strong> Errors</div>
-            </div>
-          </div>
-
-          <div class="glass-card" style="background: rgba(15, 23, 42, 0.7);">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-              <h3 style="margin: 0; color: var(--primary-light);">💼 Sales CRM Portal</h3>
-              <span class="brand-badge" style="background: rgba(245, 158, 11, 0.2); color: var(--amber);">WARNING</span>
-            </div>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">ID: <code>crm-app</code> | Strategy: <code>network-first</code></p>
-            <div style="display: flex; gap: 14px; font-size: 0.85rem; color: var(--text-main);">
-              <div>👥 <strong>34</strong> Offline Users</div>
-              <div>💾 <strong>98.2 MB</strong> Saved</div>
-              <div style="color: var(--amber);">⚠️ <strong>1</strong> Sync Alert</div>
-            </div>
-          </div>
-
-          <div class="glass-card" style="background: rgba(15, 23, 42, 0.7);">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-              <h3 style="margin: 0; color: var(--primary-light);">🔒 Admin Control Center</h3>
-              <span class="brand-badge" style="background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald);">ONLINE</span>
-            </div>
-            <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">ID: <code>admin-portal-app</code> | Strategy: <code>cache-first</code></p>
-            <div style="display: flex; gap: 14px; font-size: 0.85rem; color: var(--text-main);">
-              <div>👥 <strong>12</strong> Offline Users</div>
-              <div>💾 <strong>45.1 MB</strong> Saved</div>
-              <div>⚠️ <strong>0</strong> Errors</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ENTERPRISE TAB 2: TEAM MEMBERS & RBAC ROLES -->
-    <div id="tab-team" class="tab-content">
-      <div class="glass-card">
-        <div class="card-title">
-          <span>👥 Team Members & Role-Based Access Control (RBAC)</span>
-          <button id="btn-invite-team" class="btn btn-primary" style="padding: 6px 14px; font-size: 0.85rem;">📩 Invite Team Member</button>
-        </div>
-        <p class="card-subtitle">Manage organization permissions and assign application access control roles.</p>
-
-        <div style="overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; margin-top: 1rem;">
-          <table style="width: 100%; border-collapse: collapse; min-width: 600px; font-size: 0.9rem;">
-            <thead>
-              <tr style="border-bottom: 1px solid var(--border-glass); color: var(--text-muted); text-align: left;">
-                <th style="padding: 10px;">User Name</th>
-                <th style="padding: 10px;">Email</th>
-                <th style="padding: 10px;">RBAC Role</th>
-                <th style="padding: 10px;">App Access</th>
-                <th style="padding: 10px;">Status</th>
-              </tr>
-            </thead>
-            <tbody id="team-table-body">
-              <tr style="border-bottom: 1px solid var(--border-glass);">
-                <td style="padding: 12px 10px; font-weight: 600; color: #f8fafc;">👑 Sarah Connor</td>
-                <td style="padding: 12px 10px; color: var(--text-muted);">sarah@acmecorp.com</td>
-                <td style="padding: 12px 10px;"><span class="brand-badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8;">Admin</span></td>
-                <td style="padding: 12px 10px; color: var(--text-muted);">All Company Projects</td>
-                <td style="padding: 12px 10px;"><span style="color: var(--accent-emerald);">● Active</span></td>
-              </tr>
-              <tr style="border-bottom: 1px solid var(--border-glass);">
-                <td style="padding: 12px 10px; font-weight: 600; color: #f8fafc;">💻 Alex Mercer</td>
-                <td style="padding: 12px 10px; color: var(--text-muted);">alex@acmecorp.com</td>
-                <td style="padding: 12px 10px;"><span class="brand-badge" style="background: rgba(16, 185, 129, 0.2); color: var(--accent-emerald);">Developer</span></td>
-                <td style="padding: 12px 10px; color: var(--text-muted);">Website, Dashboard</td>
-                <td style="padding: 12px 10px;"><span style="color: var(--accent-emerald);">● Active</span></td>
-              </tr>
-              <tr style="border-bottom: 1px solid var(--border-glass);">
-                <td style="padding: 12px 10px; font-weight: 600; color: #f8fafc;">📊 John Smith</td>
-                <td style="padding: 12px 10px; color: var(--text-muted);">john@acmecorp.com</td>
-                <td style="padding: 12px 10px;"><span class="brand-badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">Analytics</span></td>
-                <td style="padding: 12px 10px; color: var(--text-muted);">Sales CRM Portal</td>
-                <td style="padding: 12px 10px;"><span style="color: var(--accent-emerald);">● Active</span></td>
-              </tr>
-              <tr style="border-bottom: 1px solid var(--border-glass);">
-                <td style="padding: 12px 10px; font-weight: 600; color: #f8fafc;">👁️ Emily Davis</td>
-                <td style="padding: 12px 10px; color: var(--text-muted);">emily@acmecorp.com</td>
-                <td style="padding: 12px 10px;"><span class="brand-badge" style="background: rgba(245, 158, 11, 0.2); color: var(--amber);">Viewer</span></td>
-                <td style="padding: 12px 10px; color: var(--text-muted);">Admin Control Center</td>
-                <td style="padding: 12px 10px;"><span style="color: var(--accent-emerald);">● Active</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ENTERPRISE TAB 3: REAL-TIME HEALTH & ALERT MONITORING -->
-    <div id="tab-alerts" class="tab-content">
-      <div class="glass-card">
-        <div class="card-title">
-          <span>🚨 Enterprise Real-Time Health & Error Alert Feed</span>
-          <span class="brand-badge" style="background: rgba(239, 68, 68, 0.2); color: var(--accent-rose);">Active Monitoring</span>
-        </div>
-        <p class="card-subtitle">Automated alerts triggered when Service Worker installation fails, Cache Storage is corrupted, or Sync Queues encounter backend errors.</p>
-
-        <ul id="alerts-list-feed" class="log-list" style="margin-top: 1rem;">
-          <li class="log-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px;">
-            <div>
-              <span class="log-type" style="background: rgba(245, 158, 11, 0.2); color: var(--amber);">SYNC_QUEUE_FAILED</span>
-              <span style="font-weight: 600; margin-left: 8px;">crm-app</span>
-              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Offline POST to /api/v1/crm/lead failed after 3 retries (HTTP 500)</div>
-            </div>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">1 hour ago</span>
-          </li>
-          <li class="log-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px;">
-            <div>
-              <span class="log-type" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">CACHE_CORRUPTED</span>
-              <span style="font-weight: 600; margin-left: 8px;">demo-app</span>
-              <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Storage quota warning reported by browser cache engine</div>
-            </div>
-            <span style="font-size: 0.75rem; color: var(--text-muted);">2 hours ago</span>
-          </li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- TAB 5: CHROME DEVTOOLS EXTENSION -->
-    <div id="tab-devtools" class="tab-content">
-      <div class="glass-card" style="border-color: var(--border-accent);">
-        <div class="card-title">
-          <span>🔌 Official ASG Offline Chrome DevTools Extension</span>
-          <span class="brand-badge">Chrome Extension V3</span>
-        </div>
-        <p class="card-subtitle">Inspect ServiceWorker state, CacheStorage assets, IndexedDB offline queue, and live sync streams directly inside Chrome DevTools (F12).</p>
-
-        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 1.5rem;">
-          <div style="flex: 1; min-width: 280px; background: rgba(15, 23, 42, 0.6); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border-glass);">
-            <h3 style="color: var(--primary-light); margin-top: 0;">⚡ How to Install in Google Chrome:</h3>
-            <ol style="color: var(--text-muted); line-height: 1.8; padding-left: 1.2rem; font-size: 0.9rem;">
-              <li>Open Chrome and navigate to <code style="color: var(--accent-cyan);">chrome://extensions/</code></li>
-              <li>Toggle <strong>Developer mode</strong> ON in the top-right corner.</li>
-              <li>Click <strong>Load unpacked</strong>.</li>
-              <li>Select the <code style="color: var(--accent-emerald);">devtools-extension</code> folder inside this repository:
-                <br><code style="color: #cbd5e1; font-size: 0.8rem;">c:\Users\Atharva\OneDrive\Desktop\asgofflinewebservice\devtools-extension</code>
-              </li>
-              <li>Open Chrome DevTools (F12) on any page to view the new <strong>"📡 ASG Offline"</strong> panel!</li>
-            </ol>
-          </div>
-
-          <div style="flex: 1; min-width: 280px; background: rgba(15, 23, 42, 0.6); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid var(--border-glass);">
-            <h3 style="color: var(--accent-emerald); margin-top: 0;">✨ DevTools Panel Features:</h3>
-            <ul style="color: var(--text-muted); line-height: 1.8; padding-left: 1.2rem; font-size: 0.9rem;">
-              <li><strong>⚡ Engine Overview</strong>: Instant SW status & network connection indicator.</li>
-              <li><strong>📦 CacheStorage Inspector</strong>: Live view of all cached assets with 1-click purge.</li>
-              <li><strong>📋 IndexedDB Queue</strong>: View pending offline actions waiting to sync.</li>
-              <li><strong>🗄️ In-Browser Database</strong>: Inspect local offline records and collections.</li>
-            </ul>
-          </div>
-        </div>
+      <div style="background: rgba(15, 23, 42, 0.7); padding: 1rem 1.25rem; border-radius: 0.5rem; font-family: monospace; font-size: 0.85rem; color: #38bdf8; margin-top: 1rem; border: 1px solid rgba(255,255,255,0.08);">
+        GET /api/v1/all-in-one?frontendUrl=https://my-app.com&backendApiUrl=https://api.my-app.com
       </div>
     </div>
   </main>
