@@ -951,7 +951,14 @@
       };
 
       // 1. Local Database Write First (Instant User Experience)
-      await this.dbApi.insert(collection, opMetaData.payload);
+      if (action === 'DELETE') {
+        if (recordId) {
+          await this.dbApi.delete(recordId);
+        }
+      } else {
+        const payloadData = recordId ? { id: recordId, ...opMetaData.payload } : opMetaData.payload;
+        await this.dbApi.insert(collection, payloadData);
+      }
 
       // 2. Append Metadata to POSA Queue in IndexedDB
       await new Promise((resolve, reject) => {
