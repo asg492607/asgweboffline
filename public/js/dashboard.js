@@ -1,9 +1,10 @@
 /**
- * ASG All-In-One Generator Dashboard Interactivity
+ * ASG All-In-One Generator Dashboard Interactivity & Sandbox Testing
  */
 
 document.addEventListener('DOMContentLoaded', () => {
   let generatedSnippets = null;
+  let lastSavedRecordId = null;
 
   // Auto-trigger initial code generation on page load
   generateCodeForUrl('https://my-awesome-site.com', 'https://api.my-awesome-site.com');
@@ -103,6 +104,80 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  // ==================== LIVE INTERACTIVE SANDBOX TESTING HANDLERS ====================
+  const sandboxOutput = document.getElementById('sandbox-output');
+  function logToSandbox(title, data) {
+    if (sandboxOutput) {
+      const timestamp = new Date().toLocaleTimeString();
+      const formatted = `[${timestamp}] ${title}\n` + JSON.stringify(data, null, 2) + '\n\n';
+      sandboxOutput.innerText = formatted + sandboxOutput.innerText;
+    }
+  }
+
+  // 1. Test Save Record
+  const btnSave = document.getElementById('btn-test-save');
+  if (btnSave) {
+    btnSave.addEventListener('click', async () => {
+      if (window.offlineApp) {
+        const item = { title: 'Offline Item ' + Math.floor(Math.random() * 1000), price: 99, createdAt: new Date().toISOString() };
+        const result = await window.offlineApp.save('test_collection', item);
+        lastSavedRecordId = result ? (result.id || result.operationId) : null;
+        logToSandbox('✅ window.offlineApp.save() executed:', result);
+        showNotification('Record Saved Offline', 'Written to IndexedDB with POSA Queue', 'success');
+      }
+    });
+  }
+
+  // 2. Test Update Record
+  const btnUpdate = document.getElementById('btn-test-update');
+  if (btnUpdate) {
+    btnUpdate.addEventListener('click', async () => {
+      if (window.offlineApp) {
+        const targetId = lastSavedRecordId || 'rec_101';
+        const result = await window.offlineApp.update('test_collection', targetId, { status: 'updated_offline', price: 120 });
+        logToSandbox('✏️ window.offlineApp.update() executed for ID ' + targetId + ':', result);
+        showNotification('Record Updated Offline', 'Delta payload queued', 'info');
+      }
+    });
+  }
+
+  // 3. Test Delete Record
+  const btnDelete = document.getElementById('btn-test-delete');
+  if (btnDelete) {
+    btnDelete.addEventListener('click', async () => {
+      if (window.offlineApp) {
+        const targetId = lastSavedRecordId || 'rec_101';
+        const result = await window.offlineApp.delete('test_collection', targetId);
+        logToSandbox('🗑️ window.offlineApp.delete() executed for ID ' + targetId + ':', result);
+        showNotification('Record Deleted Offline', 'High priority POSA delete queued', 'info');
+      }
+    });
+  }
+
+  // 4. Test Find Local Records
+  const btnFind = document.getElementById('btn-test-find');
+  if (btnFind) {
+    btnFind.addEventListener('click', async () => {
+      if (window.offlineApp) {
+        const records = await window.offlineApp.find('test_collection');
+        logToSandbox('🔍 window.offlineApp.find() retrieved ' + records.length + ' record(s):', records);
+        showNotification('Local Records Queried', `Found ${records.length} items in IndexedDB`, 'success');
+      }
+    });
+  }
+
+  // 5. Test Offline API Sync POST
+  const btnSyncPost = document.getElementById('btn-test-syncpost');
+  if (btnSyncPost) {
+    btnSyncPost.addEventListener('click', async () => {
+      if (window.offlineApp) {
+        const result = await window.offlineApp.syncPost('/api/v1/apps', { appId: 'sandbox-app', appName: 'Sandbox Test App' });
+        logToSandbox('⚡ window.offlineApp.syncPost() executed:', result);
+        showNotification('API Request Processed', result.offlineQueued ? 'Queued offline for background sync' : 'Sent to server', 'success');
+      }
+    });
+  }
 
   // Notification Toast Helper
   function showNotification(title, message, type = 'info') {
