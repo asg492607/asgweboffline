@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
-  "generation": 4044,
-  "createdAt": "2026-08-02T18:09:11.176Z",
-  "checksum": "880c08c59cb9c9d3dd6b6999eab78d9e30114652471b3aedd71372fb264ec7d5",
+  "generation": 4050,
+  "createdAt": "2026-08-02T18:12:49.968Z",
+  "checksum": "7db7a16fe5df67e8e2e10402c1a2b8c7d6bc81bdb8cd65d8aaa5ad186b46fcef",
   "records": [
     [
       "user_records:election_rec_1",
@@ -108,6 +108,21 @@
         "hlc": "2026-08-02T17:59:13.170Z-0001-chrome_profile_alpha",
         "deviceId": "chrome_profile_alpha"
       }
+    ],
+    [
+      "user_records:shared_commutativity_item",
+      {
+        "collection": "user_records",
+        "recordId": "shared_commutativity_item",
+        "payload": {
+          "id": "shared_commutativity_item",
+          "title": "Profile B Payload (Newer HLC Winner)",
+          "price": 299
+        },
+        "updatedAt": "2026-08-02T18:12:49.962Z",
+        "hlc": "2026-08-02T18:07:49.937Z-0001-chrome_profile_beta",
+        "deviceId": "chrome_profile_beta"
+      }
     ]
   ],
   "idempotencyKeys": [
@@ -187,6 +202,37 @@
       {
         "status": "SYNCED",
         "key": "user_records:event_item_001"
+      }
+    ],
+    [
+      "op_comm_b_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_commutativity_item"
+      }
+    ],
+    [
+      "op_comm_a_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_commutativity_item",
+        "winner": "server"
+      }
+    ],
+    [
+      "op_comm_a_2",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_commutativity_item",
+        "winner": "client"
+      }
+    ],
+    [
+      "op_comm_b_2",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_commutativity_item",
+        "winner": "client"
       }
     ]
   ]
