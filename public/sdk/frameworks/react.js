@@ -39,13 +39,22 @@
     const [queueCount, setQueueCount] = useState(0);
 
     useEffect(() => {
-      // Ensure base SDK script is loaded
-      if (typeof window !== 'undefined' && window.ASGOffline) {
-        setIsOnline(window.ASGOffline.isOnline);
+      let unSubStatus = null;
+      let unSubQueue = null;
 
-        window.ASGOffline.onStatusChange((status) => {
-          setIsOnline(status);
-        });
+      const bindSdk = () => {
+        if (window.ASGOffline) {
+          setIsOnline(window.ASGOffline.isOnline);
+          if (window.ASGOffline.onStatusChange) unSubStatus = window.ASGOffline.onStatusChange(setIsOnline);
+          if (window.ASGOffline.onQueueChange) unSubQueue = window.ASGOffline.onQueueChange((count) => setQueueCount(count));
+          if (window.ASGOffline.getPOSAQueue) {
+            window.ASGOffline.getPOSAQueue().then(q => setQueueCount(q ? q.length : 0));
+          }
+        }
+      };
+
+      if (typeof window !== 'undefined' && window.ASGOffline) {
+        bindSdk();
       } else if (typeof document !== 'undefined') {
         const existing = document.querySelector('script[src*="asg-offline.js"]');
         if (!existing) {
@@ -54,15 +63,15 @@
           script.setAttribute('data-app-id', appId);
           if (serverUrl) script.setAttribute('data-server-url', serverUrl);
           script.async = true;
-          script.onload = () => {
-            if (window.ASGOffline) {
-              setIsOnline(window.ASGOffline.isOnline);
-              window.ASGOffline.onStatusChange((status) => setIsOnline(status));
-            }
-          };
+          script.onload = bindSdk;
           document.head.appendChild(script);
         }
       }
+
+      return () => {
+        if (typeof unSubStatus === 'function') unSubStatus();
+        if (typeof unSubQueue === 'function') unSubQueue();
+      };
     }, [appId, serverUrl]);
 
     const contextValue = useMemo(() => ({
@@ -99,16 +108,30 @@
 
     // Fallback if provider is not wrapped higher in tree
     const [localOnline, setLocalOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+    const [localQueueCount, setLocalQueueCount] = useState(0);
 
     useEffect(() => {
+      let unSubStatus = null;
+      let unSubQueue = null;
+
       if (typeof window !== 'undefined' && window.ASGOffline) {
         setLocalOnline(window.ASGOffline.isOnline);
-        window.ASGOffline.onStatusChange((status) => setLocalOnline(status));
+        if (window.ASGOffline.onStatusChange) unSubStatus = window.ASGOffline.onStatusChange(setLocalOnline);
+        if (window.ASGOffline.onQueueChange) unSubQueue = window.ASGOffline.onQueueChange(setLocalQueueCount);
+        if (window.ASGOffline.getPOSAQueue) {
+          window.ASGOffline.getPOSAQueue().then(q => setLocalQueueCount(q ? q.length : 0));
+        }
       }
+
+      return () => {
+        if (typeof unSubStatus === 'function') unSubStatus();
+        if (typeof unSubQueue === 'function') unSubQueue();
+      };
     }, []);
 
     return {
       isOnline: context.isOnline !== undefined ? context.isOnline : localOnline,
+      queueCount: context.queueCount !== undefined ? context.queueCount : localQueueCount,
       save: context.save || (async (col, data) => window.ASGOffline?.save(col, data)),
       find: context.find || (async (col) => window.ASGOffline?.find(col)),
       syncPost: context.syncPost || (async (url, payload) => window.ASGOffline?.syncPost(url, payload)),

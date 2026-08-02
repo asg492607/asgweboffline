@@ -320,13 +320,17 @@ self.addEventListener('message', async (event) => {
   if (data.type === 'CLEAR_CACHE') {
     const keys = await caches.keys();
     await Promise.all(keys.map(key => caches.delete(key)));
-    event.ports[0].postMessage({ success: true, message: 'All offline caches cleared' });
+    if (event.ports && event.ports[0]) {
+      event.ports[0].postMessage({ success: true, message: 'All offline caches cleared' });
+    }
   }
 
   if (data.type === 'GET_CACHE_KEYS') {
     const cache = await caches.open(CACHE_NAME);
     const requests = await cache.keys();
     const urls = requests.map(r => r.url);
-    event.ports[0].postMessage({ success: true, urls });
+    if (event.ports && event.ports[0]) {
+      event.ports[0].postMessage({ success: true, urls });
+    }
   }
 });

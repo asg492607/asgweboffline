@@ -27,6 +27,7 @@
       this.swRegistration = null;
       this.db = null;
       this.statusListeners = [];
+      this.queueListeners = [];
       this.isSyncing = false;
 
       this.init();
@@ -661,7 +662,29 @@
     onStatusChange(callback) {
       if (typeof callback === 'function') {
         this.statusListeners.push(callback);
+        return () => {
+          this.statusListeners = this.statusListeners.filter(fn => fn !== callback);
+        };
       }
+      return () => {};
+    }
+
+    onQueueChange(callback) {
+      if (typeof callback === 'function') {
+        this.queueListeners.push(callback);
+        return () => {
+          this.queueListeners = this.queueListeners.filter(fn => fn !== callback);
+        };
+      }
+      return () => {};
+    }
+
+    async notifyQueueChange() {
+      const queue = await this.getPOSAQueue();
+      const count = queue ? queue.length : 0;
+      this.queueListeners.forEach(fn => {
+        try { fn(count, queue); } catch (e) {}
+      });
     }
 
     // ==================== POSA (PERSISTENT OFFLINE SYNCHRONIZATION ALGORITHM) & ASE ENGINE ====================
@@ -998,7 +1021,8 @@
       // 3. Broadcast to local peers (inter-tab / local network)
       this.broadcastToLocalPeers(opMetaData);
 
-      // Trigger Adaptive Sync Engine evaluation
+      // Trigger Adaptive Sync Engine evaluation and notify queue listeners
+      this.notifyQueueChange();
       this.triggerASESync();
 
       return opMetaData;
@@ -1302,6 +1326,7 @@
           console.log(`[POSA Engine] ✅ Successfully synchronized ${totalSynced} DAG operations across batch chunks!`);
           this.showToast('✅ POSA Sync Complete', `Successfully synced ${totalSynced} DAG operations (${savingsPct}% payload saved).`, 'success');
           this.sendTelemetry('POSA_SYNC_SUCCESS', { syncedOps: totalSynced, savingsPct });
+          this.notifyQueueChange();
         }
       } catch (err) {
         console.error('[POSA Engine] Error during execution cycle:', err);
