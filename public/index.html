@@ -8,7 +8,28 @@
   <link rel="stylesheet" href="/css/dashboard.css">
   
   <!-- Self-Host ASG Offline SDK Demonstration -->
-  <script src="/sdk/asg-offline.js" data-app-id="demo-app"></script>
+  <script 
+    src="https://asgweboffline.onrender.com/sdk/asg-offline.js" 
+    data-app-id="asgweboffline-onrender-com-offline"
+    data-strategy="stale-while-revalidate">
+  </script>
+
+  <script>
+    // Monitor connection & handle offline events
+    window.addEventListener('load', () => {
+      if (window.ASGOffline) {
+        console.log('⚡ ASG Offline Service initialized for asgweboffline.onrender.com');
+        
+        window.ASGOffline.onStatusChange((isOnline) => {
+          if (!isOnline) {
+            console.log('📡 Website is now running completely OFFLINE via browser cache!');
+          } else {
+            console.log('🟢 Website re-connected to network!');
+          }
+        });
+      }
+    });
+  </script>
 </head>
 <body>
 
