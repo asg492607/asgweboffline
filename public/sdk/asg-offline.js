@@ -672,9 +672,21 @@
       return this._sessionId;
     }
 
+    canonicalJsonStringify(obj) {
+      if (obj === null || typeof obj !== 'object') {
+        return JSON.stringify(obj);
+      }
+      if (Array.isArray(obj)) {
+        return '[' + obj.map(item => this.canonicalJsonStringify(item)).join(',') + ']';
+      }
+      const keys = Object.keys(obj).sort();
+      const parts = keys.map(k => JSON.stringify(k) + ':' + this.canonicalJsonStringify(obj[k]));
+      return '{' + parts.join(',') + '}';
+    }
+
     async generateSHA256(data) {
       try {
-        const jsonStr = typeof data === 'string' ? data : JSON.stringify(data);
+        const jsonStr = typeof data === 'string' ? data : this.canonicalJsonStringify(data);
         const msgUint8 = new TextEncoder().encode(jsonStr);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -682,7 +694,7 @@
       } catch (e) {
         // Fallback hash generator
         let hash = 0;
-        const jsonStr = JSON.stringify(data || '');
+        const jsonStr = this.canonicalJsonStringify(data || '');
         for (let i = 0; i < jsonStr.length; i++) {
           hash = (hash << 5) - hash + jsonStr.charCodeAt(i);
           hash |= 0;

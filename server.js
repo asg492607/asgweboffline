@@ -704,6 +704,18 @@ try {
   console.warn('[POSA Storage] Failed to load offline disk persistence:', e.message);
 }
 
+function canonicalJsonStringify(obj) {
+  if (obj === null || typeof obj !== 'object') {
+    return JSON.stringify(obj);
+  }
+  if (Array.isArray(obj)) {
+    return '[' + obj.map(canonicalJsonStringify).join(',') + ']';
+  }
+  const keys = Object.keys(obj).sort();
+  const parts = keys.map(k => JSON.stringify(k) + ':' + canonicalJsonStringify(obj[k]));
+  return '{' + parts.join(',') + '}';
+}
+
 let posaSaveTimer = null;
 function savePOSAPersistence() {
   if (posaSaveTimer) clearTimeout(posaSaveTimer);
@@ -716,6 +728,18 @@ function savePOSAPersistence() {
     }
   }, 300);
 }
+
+// Synchronously flush all snapshots before process exit
+function flushAllPersistenceSync() {
+  try {
+    fs.writeFileSync(PERSISTENCE_FILE, JSON.stringify(Array.from(posaRecordsDb.entries()), null, 2), 'utf8');
+    fs.writeFileSync(APPS_FILE, JSON.stringify(Array.from(appsDb.entries()), null, 2), 'utf8');
+    console.log('[Server Exit Guard] Flushed all storage snapshots to disk.');
+  } catch (e) {}
+}
+
+process.on('SIGINT', () => { flushAllPersistenceSync(); process.exit(0); });
+process.on('SIGTERM', () => { flushAllPersistenceSync(); process.exit(0); });
 
 // GET POSA Engine & Server Health Ping (Used by Adaptive Sync Engine - ASE)
 app.get('/api/v1/posa/health', (req, res) => {
@@ -810,7 +834,7 @@ app.post('/api/v1/posa/sync', (req, res) => {
     // 1. Integrity Verification (SHA-256 Checksum)
     if (hash) {
       const computedHash = crypto.createHash('sha256')
-        .update(JSON.stringify({ collection, action, payload, timestamp }))
+        .update(canonicalJsonStringify({ collection, action, payload, timestamp }))
         .digest('hex');
 
       if (computedHash !== hash && !hash.startsWith('sha256_fb_')) {
