@@ -143,57 +143,68 @@
     async initIndexedDB() {
       await this.requestPersistentStorage();
 
+      if (typeof indexedDB === 'undefined') {
+        console.warn('[ASG Offline SDK] IndexedDB is not supported or disabled in this browser environment.');
+        return;
+      }
+
       return new Promise((resolve) => {
-        const request = indexedDB.open('ASG_Offline_DB', 4);
+        try {
+          const request = indexedDB.open('ASG_Offline_DB', 4);
 
-        request.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains('offline_queue')) {
-            db.createObjectStore('offline_queue', { keyPath: 'id', autoIncrement: true });
-          }
-          if (!db.objectStoreNames.contains('offline_records')) {
-            const recordsStore = db.createObjectStore('offline_records', { keyPath: 'id', autoIncrement: true });
-            recordsStore.createIndex('collection', 'collection', { unique: false });
-          }
-          if (!db.objectStoreNames.contains('posa_queue')) {
-            const posaStore = db.createObjectStore('posa_queue', { keyPath: 'operationId' });
-            posaStore.createIndex('collection', 'collection', { unique: false });
-            posaStore.createIndex('status', 'status', { unique: false });
-            posaStore.createIndex('timestamp', 'timestamp', { unique: false });
-          }
-          if (!db.objectStoreNames.contains('device_peers')) {
-            db.createObjectStore('device_peers', { keyPath: 'deviceId' });
-          }
-          if (!db.objectStoreNames.contains('hlc_clocks')) {
-            db.createObjectStore('hlc_clocks', { keyPath: 'deviceId' });
-          }
-        };
-
-        request.onblocked = () => {
-          console.warn('[ASG Offline SDK] IndexedDB version upgrade blocked by active database connections in other tabs.');
-          this.showToast('⚠️ Storage Upgrade Pending', 'Please close other open tabs of this app to finish database migration.', 'warning');
-        };
-
-        request.onsuccess = (e) => {
-          this.db = e.target.result;
-
-          this.db.onversionchange = () => {
-            console.warn('[ASG Offline SDK] Closing IndexedDB connection due to upgrade in another tab.');
-            this.db.close();
-            this.showToast('🔄 Storage Updated', 'Database schema updated in another tab. Please refresh page.', 'info');
+          request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('offline_queue')) {
+              db.createObjectStore('offline_queue', { keyPath: 'id', autoIncrement: true });
+            }
+            if (!db.objectStoreNames.contains('offline_records')) {
+              const recordsStore = db.createObjectStore('offline_records', { keyPath: 'id', autoIncrement: true });
+              recordsStore.createIndex('collection', 'collection', { unique: false });
+            }
+            if (!db.objectStoreNames.contains('posa_queue')) {
+              const posaStore = db.createObjectStore('posa_queue', { keyPath: 'operationId' });
+              posaStore.createIndex('collection', 'collection', { unique: false });
+              posaStore.createIndex('status', 'status', { unique: false });
+              posaStore.createIndex('timestamp', 'timestamp', { unique: false });
+            }
+            if (!db.objectStoreNames.contains('device_peers')) {
+              db.createObjectStore('device_peers', { keyPath: 'deviceId' });
+            }
+            if (!db.objectStoreNames.contains('hlc_clocks')) {
+              db.createObjectStore('hlc_clocks', { keyPath: 'deviceId' });
+            }
           };
 
-          console.log('[ASG Offline SDK] In-Browser Database (IndexedDB & POSA Engine v4) ready.');
-          this.attachDbHelpers();
-          this.initLocalSubnetSync();
-          resolve();
-        };
+          request.onblocked = () => {
+            console.warn('[ASG Offline SDK] IndexedDB version upgrade blocked by active database connections in other tabs.');
+            this.showToast('⚠️ Storage Upgrade Pending', 'Please close other open tabs of this app to finish database migration.', 'warning');
+          };
 
-        request.onerror = () => {
-          console.warn('[ASG Offline SDK] IndexedDB initialization failed.');
+          request.onsuccess = (e) => {
+            this.db = e.target.result;
+
+            this.db.onversionchange = () => {
+              console.warn('[ASG Offline SDK] Closing IndexedDB connection due to upgrade in another tab.');
+              this.db.close();
+              this.showToast('🔄 Storage Updated', 'Database schema updated in another tab. Please refresh page.', 'info');
+            };
+
+            console.log('[ASG Offline SDK] In-Browser Database (IndexedDB & POSA Engine v4) ready.');
+            this.attachDbHelpers();
+            this.initLocalSubnetSync();
+            resolve();
+          };
+
+          request.onerror = (e) => {
+            console.warn('[ASG Offline SDK] IndexedDB initialization failed or access denied.', e);
+            resolve();
+          };
+        } catch (err) {
+          console.warn('[ASG Offline SDK] Exception during IndexedDB initialization:', err);
           resolve();
-        };
+        }
       });
+    }
     }
 
     attachDbHelpers() {
