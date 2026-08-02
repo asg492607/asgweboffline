@@ -1367,10 +1367,10 @@
 
     // ==================== 1-LINE API SHORTCUTS FOR CLIENTS ====================
 
-    /** 1-Line API: Save record to in-browser database (Auto-synced when online) */
+    /** 1-Line API: Save record to in-browser database (Auto-synced when online via POSA DAG) */
     async save(collection, recordData) {
-      if (this.dbApi) {
-        return await this.dbApi.insert(collection, recordData);
+      if (this.db) {
+        return await this.posaSave(collection, recordData);
       }
       return await this.queueOfflineRequest(`/api/v1/${collection}`, 'POST', recordData);
     }

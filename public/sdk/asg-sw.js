@@ -200,6 +200,15 @@ async function cacheOnly(request) {
 
 // Helper: Handle API requests with Network-First and Offline JSON Fallback
 async function handleApiRequest(request) {
+  const url = new URL(request.url);
+
+  // Critical: POSA Engine internal routes MUST NOT return synthesized HTTP 200 when offline
+  // Otherwise SDK receives HTTP 200 and deletes pending offline queue prematurely!
+  const isPosaInternalRoute = url.pathname.includes('/api/v1/posa/') ||
+                             url.pathname.includes('/api/v1/telemetry') ||
+                             url.pathname.includes('/api/v1/alerts') ||
+                             url.pathname.includes('/api/v1/config');
+
   try {
     const networkResponse = await fetch(request.clone());
     if (networkResponse && networkResponse.status === 200 && request.method === 'GET') {
@@ -208,7 +217,14 @@ async function handleApiRequest(request) {
     }
     return networkResponse;
   } catch (err) {
-    console.log('[ASG ServiceWorker] API network request failed, checking offline fallback/cache for:', request.url);
+    console.log('[ASG ServiceWorker] API network request failed for:', request.url);
+
+    if (isPosaInternalRoute) {
+      return new Response(JSON.stringify({ success: false, error: 'Network unavailable for POSA engine sync', offline: true }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     // If it's a GET request, check cache
     if (request.method === 'GET') {
@@ -216,9 +232,15 @@ async function handleApiRequest(request) {
       if (cachedResponse) {
         return cachedResponse;
       }
+    } else {
+      // Non-GET requests (POST/PUT/DELETE) return HTTP 503 so caller knows network is down
+      return new Response(JSON.stringify({ success: false, error: 'Offline mode active. Request queued locally.', offline: true }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    // Return synthesized JSON offline response for API routes with mandatory branding
+    // Return synthesized JSON offline fallback for GET API routes
     return new Response(
       JSON.stringify({
         success: true,

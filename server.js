@@ -7,7 +7,8 @@ const PORT = process.env.PORT || 3000;
 
 app.set('trust proxy', 1);
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Mandatory Branding Header Middleware
 app.use((req, res, next) => {
@@ -1031,6 +1032,16 @@ app.get('/api/v1/posa/stats/:appId?', (req, res) => {
     },
     recentSyncLogs: filteredLogs.slice(0, 10),
     recentConflicts: posaConflictLog.slice(0, 10)
+  });
+});
+
+// Global Error Handler Middleware
+app.use((err, req, res, next) => {
+  console.error('[Server Error Boundary]', err);
+  res.status(err.status || 500).json({
+    success: false,
+    error: err.message || 'Internal Server Error',
+    path: req.path
   });
 });
 
