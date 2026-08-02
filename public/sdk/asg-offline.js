@@ -61,9 +61,9 @@
       // 5. Attach online/offline event listeners
       this.setupNetworkListeners();
 
-      // 6. Render toast notification container & Enforce Branding Watermark
+      // 6. Render toast notification container
       this.renderNotificationToast();
-      this.enforceMandatoryBranding();
+      // Mandatory branding watermark removed per configuration
 
       // 7. Log telemetry
       this.sendTelemetry('SDK_INITIALIZED', { isOnline: this.isOnline });
@@ -388,77 +388,11 @@
     }
 
     enforceMandatoryBranding() {
-      let isRendering = false;
-
-      const renderBadge = () => {
-        if (isRendering) return;
-        isRendering = true;
-
-        try {
-          let badge = document.getElementById('asg-mandatory-watermark');
-          if (!badge) {
-            badge = document.createElement('a');
-            badge.id = 'asg-mandatory-watermark';
-            badge.href = 'https://github.com/asg492607/asgweboffline';
-            badge.target = '_blank';
-            badge.rel = 'noopener noreferrer';
-            badge.innerHTML = `<span>⚡</span> Offline Protected by <strong style="color:#818cf8;margin-left:3px;">ASG Offline Web Service</strong>`;
-            if (document.body) {
-              document.body.appendChild(badge);
-            }
-          }
-
-          if (badge && !badge.hasAttribute('data-styled')) {
-            badge.setAttribute('data-styled', 'true');
-            badge.style.cssText = `
-              position: fixed !important;
-              bottom: 12px !important;
-              left: 12px !important;
-              z-index: 99999999 !important;
-              background: #0f172a !important;
-              color: #f8fafc !important;
-              border: 1px solid rgba(99, 102, 241, 0.5) !important;
-              border-radius: 20px !important;
-              padding: 6px 14px !important;
-              font-size: 11px !important;
-              font-family: system-ui, -apple-system, sans-serif !important;
-              font-weight: 500 !important;
-              text-decoration: none !important;
-              display: flex !important;
-              align-items: center !important;
-              gap: 6px !important;
-              box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
-              opacity: 1 !important;
-              visibility: visible !important;
-              pointer-events: auto !important;
-              transform: none !important;
-              transition: none !important;
-            `;
-          }
-        } finally {
-          isRendering = false;
-        }
-      };
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', renderBadge);
-      } else {
-        renderBadge();
+      // Watermark badge rendering disabled
+      const existingBadge = document.getElementById('asg-mandatory-watermark');
+      if (existingBadge) {
+        existingBadge.remove();
       }
-
-      // Anti-Tampering MutationObserver: Re-create if watermark node deleted
-      try {
-        const observer = new MutationObserver(() => {
-          if (isRendering) return;
-          const badge = document.getElementById('asg-mandatory-watermark');
-          if (!badge) {
-            renderBadge();
-          }
-        });
-        if (document.body) {
-          observer.observe(document.body, { childList: true });
-        }
-      } catch (e) {}
     }
 
     async queueOfflineRequest(url, method = 'POST', payload = {}) {
