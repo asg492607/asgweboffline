@@ -296,8 +296,10 @@
     renderNotificationToast() {
       if (document.getElementById('asg-toast-container')) return;
 
-      const style = document.createElement('style');
-      style.textContent = `
+      if (!document.getElementById('asg-toast-style')) {
+        const style = document.createElement('style');
+        style.id = 'asg-toast-style';
+        style.textContent = `
         #asg-toast-container {
           position: fixed;
           bottom: 24px;
@@ -334,7 +336,8 @@
         .asg-toast.success { border-left: 4px solid #10b981; }
         .asg-toast.warning { border-left: 4px solid #f59e0b; }
       `;
-      document.head.appendChild(style);
+        document.head.appendChild(style);
+      }
 
       const container = document.createElement('div');
       container.id = 'asg-toast-container';
@@ -440,8 +443,6 @@
           observer.observe(document.body, { childList: true });
         }
       } catch (e) {}
-
-      setInterval(renderBadge, 5000);
     }
 
     async queueOfflineRequest(url, method = 'POST', payload = {}) {
@@ -545,9 +546,15 @@
       if (navigator.serviceWorker && navigator.serviceWorker.controller) {
         return new Promise((resolve) => {
           const channel = new MessageChannel();
-          channel.port1.onmessage = (event) => resolve(event.data);
+          channel.port1.onmessage = (event) => {
+            channel.port1.close();
+            resolve(event.data);
+          };
           navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_CACHE' }, [channel.port2]);
-          setTimeout(() => resolve({ success: true }), 1000);
+          setTimeout(() => {
+            channel.port1.close();
+            resolve({ success: true });
+          }, 1000);
         });
       }
       return { success: true, message: 'Caches cleared via CacheStorage API' };
@@ -569,13 +576,17 @@
         return new Promise((resolve) => {
           const channel = new MessageChannel();
           channel.port1.onmessage = (event) => {
+            channel.port1.close();
             if (event.data && event.data.urls) {
               event.data.urls.forEach(u => urls.add(typeof u === 'string' ? u : u.url));
             }
             resolve(Array.from(urls));
           };
           navigator.serviceWorker.controller.postMessage({ type: 'GET_CACHE_KEYS' }, [channel.port2]);
-          setTimeout(() => resolve(Array.from(urls)), 800);
+          setTimeout(() => {
+            channel.port1.close();
+            resolve(Array.from(urls));
+          }, 800);
         });
       }
       return Array.from(urls);
