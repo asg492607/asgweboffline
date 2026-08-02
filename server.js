@@ -688,6 +688,7 @@ const crypto = require('crypto');
 // Server-side POSA Storage and Logs
 const PERSISTENCE_FILE = path.join(__dirname, 'posa_records_store.json');
 const posaRecordsDb = new Map();
+const posaTombstonesDb = new Map(); // HLC Tombstones for out-of-order deletion convergence
 const posaProcessedOpsDb = new Map(); // Server-side Idempotency Store (keyed by operationId)
 const posaSyncLog = [];
 const posaConflictLog = [];
