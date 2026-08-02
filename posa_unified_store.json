@@ -1,0 +1,111 @@
+{
+  "timestamp": "2026-08-02T17:38:55.102Z",
+  "records": [
+    [
+      "user_records:boundary_rec_0",
+      {
+        "collection": "user_records",
+        "recordId": "boundary_rec_0",
+        "payload": {
+          "id": "boundary_rec_0",
+          "title": "Kill-Point BEFORE_TRANSACTION",
+          "amount": 500
+        },
+        "updatedAt": "2026-08-02T17:38:47.250Z",
+        "hlc": "2026-08-02T17:38:45.406Z-0001-dev_boundary_tester",
+        "deviceId": "dev_boundary_tester"
+      }
+    ],
+    [
+      "user_records:boundary_rec_1",
+      {
+        "collection": "user_records",
+        "recordId": "boundary_rec_1",
+        "payload": {
+          "id": "boundary_rec_1",
+          "title": "Kill-Point DURING_MUTATION",
+          "amount": 500
+        },
+        "updatedAt": "2026-08-02T17:38:48.133Z",
+        "hlc": "2026-08-02T17:38:48.104Z-0001-dev_boundary_tester",
+        "deviceId": "dev_boundary_tester"
+      }
+    ],
+    [
+      "user_records:boundary_rec_2",
+      {
+        "collection": "user_records",
+        "recordId": "boundary_rec_2",
+        "payload": {
+          "id": "boundary_rec_2",
+          "title": "Kill-Point IMMEDIATELY_AFTER_ATOMIC_WRITE",
+          "amount": 500
+        },
+        "updatedAt": "2026-08-02T17:38:50.705Z",
+        "hlc": "2026-08-02T17:38:50.705Z-0001-dev_boundary_tester",
+        "deviceId": "dev_boundary_tester"
+      }
+    ],
+    [
+      "user_records:boundary_rec_3",
+      {
+        "collection": "user_records",
+        "recordId": "boundary_rec_3",
+        "payload": {
+          "id": "boundary_rec_3",
+          "title": "Kill-Point DURING_HTTP_ACK",
+          "amount": 500
+        },
+        "updatedAt": "2026-08-02T17:38:53.301Z",
+        "hlc": "2026-08-02T17:38:53.301Z-0001-dev_boundary_tester",
+        "deviceId": "dev_boundary_tester"
+      }
+    ]
+  ],
+  "idempotencyKeys": [
+    [
+      "boundary_op_0_1785692297344",
+      {
+        "status": "SYNCED",
+        "key": "user_records:boundary_rec_0"
+      }
+    ],
+    [
+      "boundary_op_1_1785692299977",
+      {
+        "status": "SYNCED",
+        "key": "user_records:boundary_rec_1"
+      }
+    ],
+    [
+      "boundary_op_0_1785692325406",
+      {
+        "status": "SYNCED",
+        "key": "user_records:boundary_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "boundary_op_1_1785692328104",
+      {
+        "status": "SYNCED",
+        "key": "user_records:boundary_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "boundary_op_2_1785692330705",
+      {
+        "status": "SYNCED",
+        "key": "user_records:boundary_rec_2"
+      }
+    ],
+    [
+      "boundary_op_3_1785692333301",
+      {
+        "status": "SYNCED",
+        "key": "user_records:boundary_rec_3"
+      }
+    ]
+  ]
+}

@@ -729,38 +729,37 @@ function validatePOSABusinessInvariants(op, existingRecord, appSecret = null) {
   return { valid: true };
 }
 
-const IDEMPOTENCY_FILE = path.join(__dirname, 'posa_processed_ops_store.json');
+const UNIFIED_STORE_FILE = path.join(__dirname, 'posa_unified_store.json');
 
-// Load persisted offline records & idempotency store from local disk if available
+// Load persisted atomic unified records & idempotency store from local disk if available
 try {
-  if (fs.existsSync(PERSISTENCE_FILE)) {
-    const rawData = fs.readFileSync(PERSISTENCE_FILE, 'utf8');
+  if (fs.existsSync(UNIFIED_STORE_FILE)) {
+    const rawData = fs.readFileSync(UNIFIED_STORE_FILE, 'utf8');
     const parsed = JSON.parse(rawData);
-    if (Array.isArray(parsed)) {
-      parsed.forEach(([key, val]) => posaRecordsDb.set(key, val));
-      console.log(`[POSA Storage] Loaded ${posaRecordsDb.size} offline records from local disk persistence.`);
+    if (parsed.records && Array.isArray(parsed.records)) {
+      parsed.records.forEach(([key, val]) => posaRecordsDb.set(key, val));
     }
-  }
-  if (fs.existsSync(IDEMPOTENCY_FILE)) {
-    const rawOps = fs.readFileSync(IDEMPOTENCY_FILE, 'utf8');
-    const parsedOps = JSON.parse(rawOps);
-    if (Array.isArray(parsedOps)) {
-      parsedOps.forEach(([key, val]) => posaProcessedOpsDb.set(key, val));
-      console.log(`[POSA Storage] Loaded ${posaProcessedOpsDb.size} idempotency ops from local disk persistence.`);
+    if (parsed.idempotencyKeys && Array.isArray(parsed.idempotencyKeys)) {
+      parsed.idempotencyKeys.forEach(([key, val]) => posaProcessedOpsDb.set(key, val));
     }
+    console.log(`[POSA Atomic Storage] Loaded ${posaRecordsDb.size} records & ${posaProcessedOpsDb.size} idempotency keys atomically.`);
   }
 } catch (e) {
-  console.warn('[POSA Storage] Failed to load offline disk persistence:', e.message);
+  console.warn('[POSA Atomic Storage] Failed to load atomic snapshot:', e.message);
 }
 
 function savePOSAPersistenceSync() {
   try {
-    const data = JSON.stringify(Array.from(posaRecordsDb.entries()), null, 2);
-    fs.writeFileSync(PERSISTENCE_FILE, data, 'utf8');
-    const opsData = JSON.stringify(Array.from(posaProcessedOpsDb.entries()), null, 2);
-    fs.writeFileSync(IDEMPOTENCY_FILE, opsData, 'utf8');
+    const snapshot = {
+      timestamp: new Date().toISOString(),
+      records: Array.from(posaRecordsDb.entries()),
+      idempotencyKeys: Array.from(posaProcessedOpsDb.entries())
+    };
+    const tmpFile = `${UNIFIED_STORE_FILE}.tmp`;
+    fs.writeFileSync(tmpFile, JSON.stringify(snapshot, null, 2), 'utf8');
+    fs.renameSync(tmpFile, UNIFIED_STORE_FILE); // Atomic OS File Rename Swap (ACID Atomicity)
   } catch (e) {
-    console.warn('[POSA Storage] Synchronous disk persistence write error:', e.message);
+    console.warn('[POSA Atomic Storage] Synchronous atomic persistence write error:', e.message);
   }
 }
 
