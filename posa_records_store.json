@@ -5,16 +5,16 @@
       "collection": "orders",
       "recordId": "ord_501",
       "payload": {
+        "price": 2599,
+        "discount": "10%",
         "id": "ord_501",
-        "item": "Laptop",
-        "price": 1200,
-        "notes": "Dev B Overwrite Notes",
-        "priority": "EXPEDITED",
-        "_mergedAt": "2026-08-02T16:48:57.082Z"
+        "customerId": "cust_301",
+        "item": "Enterprise Workstation",
+        "note": "Applied Enterprise Promo"
       },
-      "updatedAt": "2026-08-02T16:48:57.082Z",
-      "hlc": "2026-08-02T16:48:57.118Z-0001-dev_beta",
-      "deviceId": "dev_beta"
+      "updatedAt": "2026-08-02T17:23:48.389Z",
+      "hlc": "2026-08-02T17:23:47.863Z-0000-dev_10ot53og_1785690961719",
+      "deviceId": "dev_10ot53og_1785690961719"
     }
   ],
   [
@@ -31,6 +31,84 @@
       "updatedAt": "2026-08-02T16:48:57.083Z",
       "hlc": "2026-08-02T16:48:57.082Z-0001-peer_node_777",
       "deviceId": "peer_node_777"
+    }
+  ],
+  [
+    "user_records:rec_6up94j",
+    {
+      "collection": "user_records",
+      "recordId": "rec_6up94j",
+      "payload": {
+        "title": "Initial Online Product Record",
+        "category": "General",
+        "id": "rec_6up94j"
+      },
+      "updatedAt": "2026-08-02T17:17:54.703Z",
+      "hlc": "2026-08-02T17:17:54.703Z-0000-dev_10ot53og_1785690961719",
+      "deviceId": "dev_10ot53og_1785690961719"
+    }
+  ],
+  [
+    "user_records:rec_7bvi4d",
+    {
+      "collection": "user_records",
+      "recordId": "rec_7bvi4d",
+      "payload": {
+        "title": "Offline Product Record When Disconnected",
+        "category": "General",
+        "id": "rec_7bvi4d"
+      },
+      "updatedAt": "2026-08-02T17:18:29.343Z",
+      "hlc": "2026-08-02T17:18:29.343Z-0000-dev_10ot53og_1785690961719",
+      "deviceId": "dev_10ot53og_1785690961719"
+    }
+  ],
+  [
+    "customers:cust_301",
+    {
+      "collection": "customers",
+      "recordId": "cust_301",
+      "payload": {
+        "email": "john.doe@enterprise.com",
+        "id": "cust_301",
+        "name": "John Doe",
+        "city": "San Francisco",
+        "phone": "555-0199"
+      },
+      "updatedAt": "2026-08-02T17:23:47.873Z",
+      "hlc": "2026-08-02T17:23:47.875Z-0000-dev_10ot53og_1785690961719",
+      "deviceId": "dev_10ot53og_1785690961719"
+    }
+  ],
+  [
+    "temp_drafts:draft_99",
+    {
+      "collection": "temp_drafts",
+      "recordId": "draft_99",
+      "payload": {
+        "id": "draft_99",
+        "draft": "Scratch Note"
+      },
+      "updatedAt": "2026-08-02T17:23:47.876Z",
+      "hlc": "2026-08-02T17:23:47.880Z-0000-dev_10ot53og_1785690961719",
+      "deviceId": "dev_10ot53og_1785690961719"
+    }
+  ],
+  [
+    "orders:ord_502",
+    {
+      "collection": "orders",
+      "recordId": "ord_502",
+      "payload": {
+        "customerId": "cust_301",
+        "item": "4K Monitor",
+        "price": 699,
+        "id": "ord_502",
+        "status": "SHIPPED"
+      },
+      "updatedAt": "2026-08-02T17:23:47.886Z",
+      "hlc": "2026-08-02T17:23:47.871Z-0000-dev_10ot53og_1785690961719",
+      "deviceId": "dev_10ot53og_1785690961719"
     }
   ]
 ]

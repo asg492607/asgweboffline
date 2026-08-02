@@ -987,8 +987,11 @@
       const hlc = this.generateHLC();
       const recId = recordId || payload.id || ('rec_' + Math.random().toString(36).substring(2, 8));
 
-      // Compute SHA-256 Checksum
-      const hash = await this.generateSHA256({ collection, action, payload, timestamp });
+      const upperAction = action.toUpperCase();
+      const normPayload = { ...payload, id: recId };
+
+      // Compute SHA-256 Checksum over canonical metadata
+      const hash = await this.generateSHA256({ collection, action: upperAction, payload: normPayload, timestamp });
 
       const opMetaData = {
         operationId,

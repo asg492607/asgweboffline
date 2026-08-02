@@ -391,6 +391,7 @@ function showNotification(title, msg, type = 'info') {
 
 // Enterprise Multi-Project & RBAC Event Handlers
 document.addEventListener('DOMContentLoaded', () => {
+  let currentAppId = 'demo-app';
   const projSelect = document.getElementById('header-project-select');
   const roleSelect = document.getElementById('header-role-select');
 

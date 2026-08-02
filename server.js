@@ -82,15 +82,18 @@ function saveAppsPersistence() {
 // Telemetry store
 const telemetryStore = [];
 
-// Serve static assets from public (Dashboard & SDK)
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Set Service Worker header for /sdk/asg-sw.js so it can control root scope if needed
+// Set Service Worker header for /sdk/asg-sw.js so it can control root scope '/'
 app.get('/sdk/asg-sw.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
   res.setHeader('Service-Worker-Allowed', '/');
   res.sendFile(path.join(__dirname, 'public', 'sdk', 'asg-sw.js'));
 });
+
+// Favicon handler
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
+// Serve static assets from public (Dashboard & SDK)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ==================== REST API ENDPOINTS ====================
 

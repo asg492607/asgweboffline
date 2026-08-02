@@ -1,0 +1,98 @@
+[
+  [
+    "demo-app",
+    {
+      "appId": "demo-app",
+      "appName": "My Offline Ready Web App",
+      "domain": "localhost:3000",
+      "themeColor": "#6366f1",
+      "backgroundColor": "#0f172a",
+      "cacheStrategy": "stale-while-revalidate",
+      "precacheUrls": [
+        "/",
+        "/index.html",
+        "/css/dashboard.css",
+        "/js/dashboard.js",
+        "/sdk/asg-offline.js",
+        "/sdk/asg-sw.js"
+      ],
+      "networkTimeoutMs": 3000,
+      "offlineFallbackHtml": "\n    <div style=\"font-family: system-ui, sans-serif; text-align: center; padding: 3rem; background: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;\">\n      <div style=\"font-size: 4rem; margin-bottom: 1rem;\">📡⚡</div>\n      <h1 style=\"color: #6366f1; margin-bottom: 0.5rem;\">Offline Mode Active</h1>\n      <p style=\"color: #94a3b8; max-width: 500px; margin-bottom: 2rem;\">You are currently offline, but ASG Offline Web Service is serving your app seamlessly from local cache storage.</p>\n      <button onclick=\"window.location.reload()\" style=\"background: #6366f1; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; font-size: 1rem;\">Retry Connection</button>\n    </div>\n  ",
+      "enableBackgroundSync": true,
+      "enableOfflineNotifications": true,
+      "cacheVersion": "v1.0.0",
+      "createdAt": "2026-08-02T17:14:49.625Z"
+    }
+  ],
+  [
+    "my-awesome-site-com-offline",
+    {
+      "appId": "my-awesome-site-com-offline",
+      "appName": "My-awesome-site.com Offline App",
+      "domain": "my-awesome-site.com",
+      "websiteUrl": "https://my-awesome-site.com",
+      "backendApiUrl": "https://api.my-awesome-site.com",
+      "cacheStrategy": "stale-while-revalidate",
+      "precacheUrls": [
+        "/",
+        "/index.html",
+        "/styles.css",
+        "/main.js",
+        "/favicon.ico"
+      ],
+      "themeColor": "#6366f1",
+      "backgroundColor": "#0f172a",
+      "enableBackgroundSync": true,
+      "enableOfflineNotifications": true,
+      "createdAt": "2026-08-02T17:26:55.251Z"
+    }
+  ],
+  [
+    "my-awesome-site-chttps-offline",
+    {
+      "appId": "my-awesome-site-chttps-offline",
+      "appName": "My-awesome-site.chttps Offline App",
+      "domain": "my-awesome-site.chttps",
+      "websiteUrl": "https://my-awesome-site.chttps://my-awesome-app.comom",
+      "backendApiUrl": "https://api.my-awesome-sihttps://api.my-awesome-app.com/v1te.com",
+      "cacheStrategy": "stale-while-revalidate",
+      "precacheUrls": [
+        "//my-awesome-app.comom",
+        "/index.html",
+        "/styles.css",
+        "/main.js",
+        "/favicon.ico"
+      ],
+      "themeColor": "#6366f1",
+      "backgroundColor": "#0f172a",
+      "enableBackgroundSync": true,
+      "enableOfflineNotifications": true,
+      "createdAt": "2026-08-02T17:24:52.129Z"
+    }
+  ],
+  [
+    "test-config-app",
+    {
+      "appId": "test-config-app",
+      "appName": "My Offline Ready Web App",
+      "domain": "localhost:3000",
+      "themeColor": "#6366f1",
+      "backgroundColor": "#0f172a",
+      "cacheStrategy": "stale-while-revalidate",
+      "precacheUrls": [
+        "/",
+        "/index.html",
+        "/css/dashboard.css",
+        "/js/dashboard.js",
+        "/sdk/asg-offline.js",
+        "/sdk/asg-sw.js"
+      ],
+      "networkTimeoutMs": 3000,
+      "offlineFallbackHtml": "\n    <div style=\"font-family: system-ui, sans-serif; text-align: center; padding: 3rem; background: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;\">\n      <div style=\"font-size: 4rem; margin-bottom: 1rem;\">📡⚡</div>\n      <h1 style=\"color: #6366f1; margin-bottom: 0.5rem;\">Offline Mode Active</h1>\n      <p style=\"color: #94a3b8; max-width: 500px; margin-bottom: 2rem;\">You are currently offline, but ASG Offline Web Service is serving your app seamlessly from local cache storage.</p>\n      <button onclick=\"window.location.reload()\" style=\"background: #6366f1; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; font-size: 1rem;\">Retry Connection</button>\n    </div>\n  ",
+      "enableBackgroundSync": true,
+      "enableOfflineNotifications": true,
+      "cacheVersion": "v1.1785691599194",
+      "updatedAt": "2026-08-02T17:26:39.194Z"
+    }
+  ]
+]
