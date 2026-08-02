@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
-  "generation": 4042,
-  "createdAt": "2026-08-02T17:58:41.142Z",
-  "checksum": "b9d3d7bb99abaf8a06e4101bab7452026c6aa4252ed3f1db7785e0ac3eac53a9",
+  "generation": 4044,
+  "createdAt": "2026-08-02T18:09:11.176Z",
+  "checksum": "880c08c59cb9c9d3dd6b6999eab78d9e30114652471b3aedd71372fb264ec7d5",
   "records": [
     [
       "user_records:election_rec_1",
@@ -29,6 +29,84 @@
         "updatedAt": "2026-08-02T17:58:39.578Z",
         "hlc": "2026-08-02T17:58:39.502Z-0001-dev_storm_tester",
         "deviceId": "dev_storm_tester"
+      }
+    ],
+    [
+      "user_records:shared_item_001",
+      {
+        "collection": "user_records",
+        "recordId": "shared_item_001",
+        "payload": {
+          "id": "shared_item_001",
+          "title": "State Edit by Profile B (NEWER HLC WINNER)",
+          "price": 299,
+          "category": "STATE"
+        },
+        "updatedAt": "2026-08-02T18:09:11.175Z",
+        "hlc": "2026-08-02T17:59:11.170Z-0001-chrome_profile_alpha",
+        "deviceId": "chrome_profile_alpha"
+      }
+    ],
+    [
+      "user_records:cmd_item_002",
+      {
+        "collection": "user_records",
+        "recordId": "cmd_item_002",
+        "payload": {
+          "id": "cmd_item_002",
+          "title": "Command Op from Profile B (Order Placement)",
+          "price": 900,
+          "category": "COMMAND"
+        },
+        "updatedAt": "2026-08-02T18:04:12.171Z",
+        "hlc": "2026-08-02T18:04:12.171Z-0001-chrome_profile_beta",
+        "deviceId": "chrome_profile_beta"
+      }
+    ],
+    [
+      "user_records:event_item_002",
+      {
+        "collection": "user_records",
+        "recordId": "event_item_002",
+        "payload": {
+          "id": "event_item_002",
+          "title": "Event Audit Log from Profile B",
+          "category": "EVENT"
+        },
+        "updatedAt": "2026-08-02T18:04:13.171Z",
+        "hlc": "2026-08-02T18:04:13.171Z-0001-chrome_profile_beta",
+        "deviceId": "chrome_profile_beta"
+      }
+    ],
+    [
+      "user_records:cmd_item_001",
+      {
+        "collection": "user_records",
+        "recordId": "cmd_item_001",
+        "payload": {
+          "id": "cmd_item_001",
+          "title": "Command Op from Profile A (Payment)",
+          "price": 500,
+          "category": "COMMAND"
+        },
+        "updatedAt": "2026-08-02T17:59:12.170Z",
+        "hlc": "2026-08-02T17:59:12.170Z-0001-chrome_profile_alpha",
+        "deviceId": "chrome_profile_alpha"
+      }
+    ],
+    [
+      "user_records:event_item_001",
+      {
+        "collection": "user_records",
+        "recordId": "event_item_001",
+        "payload": {
+          "id": "event_item_001",
+          "title": "Event Audit Log from Profile A",
+          "category": "EVENT"
+        },
+        "updatedAt": "2026-08-02T17:59:13.170Z",
+        "hlc": "2026-08-02T17:59:13.170Z-0001-chrome_profile_alpha",
+        "deviceId": "chrome_profile_alpha"
       }
     ]
   ],
@@ -66,6 +144,49 @@
         "status": "SYNCED",
         "key": "user_records:storm_rec_001",
         "winner": "client"
+      }
+    ],
+    [
+      "op_prof_b_state_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_item_001"
+      }
+    ],
+    [
+      "op_prof_b_cmd_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:cmd_item_002"
+      }
+    ],
+    [
+      "op_prof_b_event_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:event_item_002"
+      }
+    ],
+    [
+      "op_prof_a_state_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_item_001",
+        "winner": "server"
+      }
+    ],
+    [
+      "op_prof_a_cmd_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:cmd_item_001"
+      }
+    ],
+    [
+      "op_prof_a_event_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:event_item_001"
       }
     ]
   ]
