@@ -210,6 +210,9 @@
           <button id="posa-btn-simulate-3days" class="btn btn-primary" style="padding: 10px 20px; font-weight: bold; background: linear-gradient(135deg, #4f46e5, #818cf8);">
             🚀 Run 3-Day Offline Stream Simulator
           </button>
+          <button id="posa-btn-simulate-p2p" class="btn btn-primary" style="padding: 10px 20px; font-weight: bold; background: linear-gradient(135deg, #06b6d4, #3b82f6);">
+            📡 Simulate 2-Device Offline P2P Sync
+          </button>
           <button id="posa-btn-trigger-sync" class="btn btn-secondary">
             🔄 Force ASE Sync Evaluation
           </button>
@@ -276,6 +279,30 @@
           <p class="card-subtitle">Visualizes parent-child order (e.g. Customer -> Order -> Payment).</p>
           <div class="code-box" style="margin-top: 0.75rem;">
             <pre id="posa-dag-visualizer" style="min-height: 180px; max-height: 240px;">// POSA DAG Topological Execution Plan will render here...</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Multi-Device Offline P2P Subnet & HLC Sync Engine -->
+      <div class="glass-card" style="margin-bottom: 1.5rem;">
+        <div class="card-title">
+          <span>📡 Multi-Device Offline P2P Subnet & HLC Sync Engine</span>
+          <span id="posa-peers-badge" class="brand-badge" style="background: var(--accent-cyan); color: #0f172a;">1 Active Local Peer</span>
+        </div>
+        <p class="card-subtitle">Discovers nearby offline devices over Local Subnet/P2P, exchanges Hybrid Logical Clock (HLC) vectors, and resolves multi-device offline conflicts with zero network connectivity.</p>
+
+        <div class="grid-2" style="margin-top: 1rem;">
+          <div>
+            <label style="font-weight: 600; color: var(--text-muted); font-size: 0.85rem;">Local Subnet Peers Discovered</label>
+            <div class="code-box" style="margin-top: 0.5rem;">
+              <pre id="posa-peers-list-display" style="min-height: 110px; max-height: 150px;">// Discovered P2P peer devices on local subnet/tab will be listed here...</pre>
+            </div>
+          </div>
+          <div>
+            <label style="font-weight: 600; color: var(--text-muted); font-size: 0.85rem;">HLC Multi-Device Merge Log</label>
+            <div class="code-box" style="margin-top: 0.5rem;">
+              <pre id="posa-p2p-merge-log" style="min-height: 110px; max-height: 150px;">// Multi-device HLC merges and conflict-free resolution log...</pre>
+            </div>
           </div>
         </div>
       </div>

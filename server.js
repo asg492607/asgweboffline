@@ -469,25 +469,21 @@ app.get('/api/v1/stats/:appId?', (req, res) => {
   const offlineHits = filtered.filter(t => t.eventType === 'OFFLINE_FALLBACK').length;
   const backgroundSyncs = filtered.filter(t => t.eventType === 'BACKGROUND_SYNC').length;
 
-  const hasRealData = filtered.length > 0;
   const totalRequests = cacheHits + networkHits + offlineHits;
-  const cacheHitRatio = totalRequests > 0 ? Math.round((cacheHits / totalRequests) * 100) : (hasRealData ? 0 : 88);
-
-  // Estimated data saved (averaging 350KB per cached request hit)
+  const cacheHitRatio = totalRequests > 0 ? Math.round((cacheHits / totalRequests) * 100) : 0;
   const savedBytesMB = ((cacheHits * 350) / 1024).toFixed(2);
 
   res.json({
     success: true,
     metrics: {
-      totalRequests: hasRealData ? totalRequests : 1420,
-      cacheHits: hasRealData ? cacheHits : 1250,
-      networkHits: hasRealData ? networkHits : 145,
-      offlineHits: hasRealData ? offlineHits : 25,
-      backgroundSyncs: hasRealData ? backgroundSyncs : 12,
+      totalRequests,
+      cacheHits,
+      networkHits,
+      offlineHits,
+      backgroundSyncs,
       cacheHitRatio: `${cacheHitRatio}%`,
-      savedBandwidthMB: `${hasRealData ? savedBytesMB : '427.5'} MB`,
-      avgLoadTimeOfflineMs: 38,
-      avgLoadTimeNetworkMs: 420
+      savedBandwidthMB: `${savedBytesMB} MB`,
+      activeServerRecords: posaRecordsDb.size
     },
     recentEvents: filtered.slice(0, 15)
   });
@@ -504,7 +500,7 @@ app.get('/api/v1/demo-records', (req, res) => {
   res.json({
     success: true,
     source: 'cloud_server',
-    records: demoRecordsStore,
+    records: Array.from(posaRecordsDb.values()).concat(demoRecordsStore),
     timestamp: new Date().toISOString()
   });
 });
@@ -569,24 +565,19 @@ orgsDb.set('acme-corp', {
   orgName: 'Acme Enterprise Corp',
   projects: [
     { appId: 'demo-app', appName: 'Main Marketing Website', category: 'Website', status: 'Active', cacheStrategy: 'stale-while-revalidate', offlineUsers: 142, savedMB: '427.5 MB', errors: 0 },
-    { appId: 'dashboard-app', appName: 'Customer Dashboard', category: 'Dashboard', status: 'Active', cacheStrategy: 'stale-while-revalidate', offlineUsers: 89, savedMB: '215.0 MB', errors: 0 },
-    { appId: 'crm-app', appName: 'Sales CRM Portal', category: 'CRM', status: 'Active', cacheStrategy: 'network-first', offlineUsers: 34, savedMB: '98.2 MB', errors: 1 },
-    { appId: 'admin-portal-app', appName: 'Admin Control Center', category: 'Admin Portal', status: 'Active', cacheStrategy: 'cache-first', offlineUsers: 12, savedMB: '45.1 MB', errors: 0 }
+    { appId: 'dashboard-app', appName: 'Customer Dashboard', category: 'Dashboard', status: 'Active', cacheStrategy: 'stale-while-revalidate', offlineUsers: 89, savedMB: '215.0 MB', errors: 0 }
   ]
 });
 
 // Seed default Team Members with RBAC Roles
 const teamDb = [
   { id: 'usr_1', name: 'Sarah Connor', email: 'sarah@acmecorp.com', role: 'Admin', assignedApps: ['All Apps'], status: 'Active' },
-  { id: 'usr_2', name: 'Alex Mercer', email: 'alex@acmecorp.com', role: 'Developer', assignedApps: ['Website', 'Dashboard'], status: 'Active' },
-  { id: 'usr_3', name: 'John Smith', email: 'john@acmecorp.com', role: 'Analytics', assignedApps: ['CRM'], status: 'Active' },
-  { id: 'usr_4', name: 'Emily Davis', email: 'emily@acmecorp.com', role: 'Viewer', assignedApps: ['Admin Portal'], status: 'Active' }
+  { id: 'usr_2', name: 'Alex Mercer', email: 'alex@acmecorp.com', role: 'Developer', assignedApps: ['Website', 'Dashboard'], status: 'Active' }
 ];
 
 // Health Alerts Store
 const alertsDb = [
-  { id: 'alt_101', appId: 'crm-app', type: 'SYNC_QUEUE_FAILED', message: 'Offline POST to /api/v1/crm/lead failed after 3 retries (HTTP 500)', severity: 'warning', timestamp: new Date(Date.now() - 3600000).toISOString() },
-  { id: 'alt_102', appId: 'demo-app', type: 'CACHE_CORRUPTED', message: 'Storage quota warning reported by browser cache engine', severity: 'info', timestamp: new Date(Date.now() - 7200000).toISOString() }
+  { id: 'alt_101', appId: 'crm-app', type: 'SYNC_QUEUE_FAILED', message: 'Offline POST to /api/v1/crm/lead failed after 3 retries (HTTP 500)', severity: 'warning', timestamp: new Date(Date.now() - 3600000).toISOString() }
 ];
 
 // GET Organization & Projects Overview
@@ -658,14 +649,41 @@ app.post('/api/v1/alerts', (req, res) => {
   res.json({ success: true, alert: newAlert });
 });
 
+
 // ==================== POSA (PERSISTENT OFFLINE SYNCHRONIZATION ALGORITHM) APIS ====================
 
 const crypto = require('crypto');
+const fs = require('fs');
 
 // Server-side POSA Storage and Logs
+const PERSISTENCE_FILE = path.join(__dirname, 'posa_records_store.json');
 const posaRecordsDb = new Map();
 const posaSyncLog = [];
 const posaConflictLog = [];
+
+// Load persisted offline records from local disk if available
+try {
+  if (fs.existsSync(PERSISTENCE_FILE)) {
+    const rawData = fs.readFileSync(PERSISTENCE_FILE, 'utf8');
+    const parsed = JSON.parse(rawData);
+    if (Array.isArray(parsed)) {
+      parsed.forEach(([key, val]) => posaRecordsDb.set(key, val));
+      console.log(`[POSA Storage] Loaded ${posaRecordsDb.size} offline records from local disk persistence (${PERSISTENCE_FILE}).`);
+    }
+  }
+} catch (e) {
+  console.warn('[POSA Storage] Failed to load offline disk persistence:', e.message);
+}
+
+// Function to snapshot POSA storage to disk (enables server offline durability)
+function savePOSAPersistence() {
+  try {
+    const data = JSON.stringify(Array.from(posaRecordsDb.entries()), null, 2);
+    fs.writeFileSync(PERSISTENCE_FILE, data, 'utf8');
+  } catch (e) {
+    console.warn('[POSA Storage] Failed to save offline snapshot to disk:', e.message);
+  }
+}
 
 // GET POSA Engine & Server Health Ping (Used by Adaptive Sync Engine - ASE)
 app.get('/api/v1/posa/health', (req, res) => {
@@ -674,7 +692,64 @@ app.get('/api/v1/posa/health', (req, res) => {
     engine: 'ASG POSA v2.0 & Adaptive Sync Engine (ASE)',
     serverTimestamp: new Date().toISOString(),
     cpuLoad: '12%',
-    activeConnections: activeSessionsStore.size
+    activeConnections: activeSessionsStore.size,
+    persistedRecordsCount: posaRecordsDb.size
+  });
+});
+
+// GET POSA Discovery Metadata (Used for P2P / Local Subnet Server Discovery)
+app.get('/api/v1/posa/discovery', (req, res) => {
+  res.json({
+    success: true,
+    nodeId: `node_${process.pid}_${req.hostname}`,
+    protocol: 'POSA_P2P_SUBNET_V1',
+    supportedTransports: ['WEBRTC_DATA_CHANNEL', 'BROADCAST_CHANNEL', 'LOCAL_SUBNET_HTTP'],
+    recordsCount: posaRecordsDb.size,
+    serverTimestamp: new Date().toISOString()
+  });
+});
+
+// POST POSA Direct Peer-to-Peer Subnet Sync Endpoint
+app.post('/api/v1/posa/peer-sync', (req, res) => {
+  const { peerId, operations } = req.body;
+  if (!operations || !Array.isArray(operations)) {
+    return res.status(400).json({ success: false, error: 'operations array is required' });
+  }
+
+  console.log(`[POSA Peer Sync] Ingesting ${operations.length} peer operations from local peer '${peerId}'`);
+
+  const processed = [];
+  for (const op of operations) {
+    const { collection, recordId, payload, action, timestamp, hlc } = op;
+    const key = `${collection}:${recordId || payload?.id}`;
+
+    const existing = posaRecordsDb.get(key);
+    if (!existing) {
+      if (action !== 'DELETE') {
+        posaRecordsDb.set(key, { collection, recordId, payload, updatedAt: timestamp || new Date().toISOString(), hlc, deviceId: peerId });
+      }
+      processed.push(op.operationId);
+    } else {
+      // Merge logic
+      posaRecordsDb.set(key, {
+        collection,
+        recordId,
+        payload: { ...existing.payload, ...payload, _mergedAt: new Date().toISOString() },
+        updatedAt: new Date().toISOString(),
+        hlc,
+        deviceId: peerId
+      });
+      processed.push(op.operationId);
+    }
+  }
+
+  savePOSAPersistence();
+
+  res.json({
+    success: true,
+    peerId,
+    processedOpsCount: processed.length,
+    currentServerState: Array.from(posaRecordsDb.values())
   });
 });
 
@@ -693,7 +768,7 @@ app.post('/api/v1/posa/sync', (req, res) => {
   console.log(`[POSA Server Engine] Processing batch of ${operations.length} DAG operations from device '${deviceId || 'unknown'}' (Strategy: ${strategy})...`);
 
   for (const op of operations) {
-    const { operationId, collection, action, payload, recordId, timestamp, hash } = op;
+    const { operationId, collection, action, payload, recordId, timestamp, hash, hlc } = op;
     const key = `${collection}:${recordId}`;
 
     // 1. Integrity Verification (SHA-256 Checksum)
@@ -717,12 +792,13 @@ app.post('/api/v1/posa/sync', (req, res) => {
           recordId,
           payload,
           updatedAt: timestamp,
+          hlc: hlc || timestamp,
           deviceId
         });
       }
       syncedIds.push(operationId);
     } else {
-      // Conflict Resolution Logic
+      // Conflict Resolution Logic (Using HLC & Timestamp)
       const localTime = new Date(timestamp).getTime();
       const serverTime = new Date(existingRecord.updatedAt).getTime();
 
@@ -739,8 +815,16 @@ app.post('/api/v1/posa/sync', (req, res) => {
         winner = 'merged';
         winningPayload = { ...existingRecord.payload, ...payload, _mergedAt: new Date().toISOString() };
       } else {
-        // LAST_WRITE_WINS default
-        if (localTime >= serverTime) {
+        // LAST_WRITE_WINS default with HLC priority
+        if (hlc && existingRecord.hlc) {
+          if (hlc >= existingRecord.hlc) {
+            winner = 'client';
+            winningPayload = payload;
+          } else {
+            winner = 'server';
+            winningPayload = existingRecord.payload;
+          }
+        } else if (localTime >= serverTime) {
           winner = 'client';
           winningPayload = payload;
         } else {
@@ -757,6 +841,7 @@ app.post('/api/v1/posa/sync', (req, res) => {
           recordId,
           payload: winningPayload,
           updatedAt: new Date().toISOString(),
+          hlc: hlc || existingRecord.hlc,
           deviceId
         });
       }
@@ -772,6 +857,9 @@ app.post('/api/v1/posa/sync', (req, res) => {
       });
     }
   }
+
+  // Snapshot to local disk persistence for offline durability
+  savePOSAPersistence();
 
   // Audit log entry
   const syncEvent = {
@@ -799,7 +887,8 @@ app.post('/api/v1/posa/sync', (req, res) => {
     syncedOperationIds: syncedIds,
     conflictsResolved: conflictsResolved.length,
     processedCount: syncedIds.length,
-    serverTimestamp: new Date().toISOString()
+    serverTimestamp: new Date().toISOString(),
+    persistedStorageCount: posaRecordsDb.size
   });
 });
 

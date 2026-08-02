@@ -1,0 +1,36 @@
+[
+  [
+    "orders:ord_501",
+    {
+      "collection": "orders",
+      "recordId": "ord_501",
+      "payload": {
+        "id": "ord_501",
+        "item": "Laptop",
+        "price": 1200,
+        "notes": "Dev B Overwrite Notes",
+        "priority": "EXPEDITED",
+        "_mergedAt": "2026-08-02T16:22:40.224Z"
+      },
+      "updatedAt": "2026-08-02T16:22:40.224Z",
+      "hlc": "2026-08-02T16:22:40.267Z-0001-dev_beta",
+      "deviceId": "dev_beta"
+    }
+  ],
+  [
+    "inventory:inv_10",
+    {
+      "collection": "inventory",
+      "recordId": "inv_10",
+      "payload": {
+        "id": "inv_10",
+        "title": "Offline Subnet Scanner",
+        "qty": 50,
+        "_mergedAt": "2026-08-02T16:22:40.227Z"
+      },
+      "updatedAt": "2026-08-02T16:22:40.227Z",
+      "hlc": "2026-08-02T16:22:40.234Z-0001-peer_node_777",
+      "deviceId": "peer_node_777"
+    }
+  ]
+]

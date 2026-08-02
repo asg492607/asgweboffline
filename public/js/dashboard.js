@@ -316,13 +316,22 @@ function setupSandboxControls() {
       const title = document.getElementById('db-record-title').value;
       const category = document.getElementById('db-record-category').value;
 
-      if (window.ASGOffline && window.ASGOffline.database) {
-        const record = await window.ASGOffline.database.insert('demo_collection', { title, category });
+      if (window.ASGOffline && window.ASGOffline.posaSave) {
+        const op = await window.ASGOffline.posaSave('user_records', { title, category });
+        const allRecords = await window.ASGOffline.find('user_records');
+
         if (dbOutputPre) {
-          dbOutputPre.innerText = `[SUCCESS] Inserted Record to In-Browser Database (IndexedDB):\n` + JSON.stringify(record, null, 2);
+          dbOutputPre.innerText = `[REAL OFFLINE POSA ACTION] Saved Record & Queued DAG Operation:\n` +
+            `• Operation ID: ${op.operationId}\n` +
+            `• HLC Clock: ${op.hlc}\n` +
+            `• SHA-256 Checksum: ${op.hash}\n` +
+            `• Total Local Records in IndexedDB: ${allRecords.length}\n\n` +
+            JSON.stringify(allRecords, null, 2);
         }
-        showNotification('💾 In-Browser DB Record Saved', `Saved '${title}' to Chrome local storage.`, 'success');
+
+        showNotification('💾 Real POSA Record Saved', `Saved '${title}' to offline IndexedDB and queued for sync.`, 'success');
         document.getElementById('db-record-title').value = '';
+        updatePOSADashboardView();
       } else {
         if (dbOutputPre) dbOutputPre.innerText = '[ERROR] In-Browser Database SDK not ready yet.';
       }
@@ -338,7 +347,7 @@ function setupSandboxControls() {
         const headerSource = res.headers.get('X-ASG-Offline-Source') || (data.source || 'Network Cloud API');
 
         if (dbOutputPre) {
-          dbOutputPre.innerText = `[API RESPONSE] HTTP ${res.status} OK\nResponse Source: ${headerSource}\n` + JSON.stringify(data, null, 2);
+          dbOutputPre.innerText = `[REAL API RESPONSE] HTTP ${res.status} OK\nResponse Source: ${headerSource}\n` + JSON.stringify(data, null, 2);
         }
       } catch (err) {
         if (dbOutputPre) dbOutputPre.innerText = '[FETCH FAILED] ' + err.message;
@@ -348,10 +357,10 @@ function setupSandboxControls() {
 
   if (btnLoadLocalDb) {
     btnLoadLocalDb.addEventListener('click', async () => {
-      if (window.ASGOffline && window.ASGOffline.database) {
-        const records = await window.ASGOffline.database.getAll('demo_collection');
+      if (window.ASGOffline) {
+        const records = await window.ASGOffline.find('user_records');
         if (dbOutputPre) {
-          dbOutputPre.innerText = `[LOCAL BROWSER DATABASE] Found ${records.length} records in IndexedDB ('demo_collection'):\n` + JSON.stringify(records, null, 2);
+          dbOutputPre.innerText = `[REAL LOCAL BROWSER DATABASE] Found ${records.length} records in IndexedDB ('user_records'):\n` + JSON.stringify(records, null, 2);
         }
       }
     });
@@ -359,12 +368,13 @@ function setupSandboxControls() {
 
   if (btnClearLocalDb) {
     btnClearLocalDb.addEventListener('click', async () => {
-      if (window.ASGOffline && window.ASGOffline.database) {
-        await window.ASGOffline.database.clear('demo_collection');
+      if (window.ASGOffline && window.ASGOffline.dbApi) {
+        await window.ASGOffline.dbApi.clear('user_records');
         if (dbOutputPre) {
-          dbOutputPre.innerText = '[LOCAL BROWSER DATABASE] In-Browser Database cleared successfully.';
+          dbOutputPre.innerText = '[REAL LOCAL BROWSER DATABASE] In-Browser IndexedDB records cleared successfully.';
         }
-        showNotification('🗑️ Database Cleared', 'In-Browser IndexedDB collection cleared.', 'warning');
+        showNotification('🗑️ Database Cleared', 'In-Browser IndexedDB records cleared.', 'warning');
+        updatePOSADashboardView();
       }
     });
   }
@@ -418,6 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initPOSADashboard() {
   const btnSimulate = document.getElementById('posa-btn-simulate-3days');
+  const btnSimulateP2P = document.getElementById('posa-btn-simulate-p2p');
   const btnSync = document.getElementById('posa-btn-trigger-sync');
   const btnClear = document.getElementById('posa-btn-clear-queue');
   const selectStrategy = document.getElementById('posa-select-conflict-strategy');
@@ -527,6 +538,30 @@ function initPOSADashboard() {
     });
   }
 
+  // 2b. 2-Device Offline P2P Sync Simulator Listener
+  if (btnSimulateP2P) {
+    btnSimulateP2P.addEventListener('click', async () => {
+      if (!window.ASGOffline || !window.ASGOffline.simulateMultiDeviceSync) {
+        showNotification('⚠️ Engine Initializing', 'POSA Subnet Engine loading...', 'warning');
+        return;
+      }
+
+      showNotification('📡 Multi-Device P2P Sync Initiated', 'Simulating offline synchronization between Device A (dev_alpha) & Device B (dev_beta)...', 'info');
+
+      const devAOps = [
+        { operationId: 'sim_op_a1', collection: 'pos_orders', action: 'CREATE', payload: { id: 'pos_881', cashier: 'Alex', item: 'Espresso', amount: 4.50 }, recordId: 'pos_881' }
+      ];
+      const devBOps = [
+        { operationId: 'sim_op_b1', collection: 'pos_orders', action: 'UPDATE', payload: { id: 'pos_881', payment: 'CARD', tip: 1.00, notes: 'Field Merged Offline' }, recordId: 'pos_881' }
+      ];
+
+      const res = await window.ASGOffline.simulateMultiDeviceSync(devAOps, devBOps);
+      showNotification('✅ P2P Sync Complete', res.message, 'success');
+
+      updatePOSADashboardView();
+    });
+  }
+
   // 3. Force ASE Sync Evaluation
   if (btnSync) {
     btnSync.addEventListener('click', async () => {
@@ -594,12 +629,32 @@ async function updatePOSADashboardView() {
         dagVisualizer.innerText = '// No DAG dependencies currently active in queue.';
       } else {
         dagVisualizer.innerText = sortedDAG.map((node, i) =>
-          `Step ${i + 1}: [${node.action}] ${node.collection}:${node.recordId} | Dep: ${node.dependencyId || 'None (Root)'} | SHA-256: ${node.hash ? node.hash.substring(0, 14) + '...' : 'Verified'}`
+          `Step ${i + 1}: [${node.action}] ${node.collection}:${node.recordId} | Dep: ${node.dependencyId || 'None (Root)'} | HLC: ${node.hlc || 'HLC-v1'} | SHA-256: ${node.hash ? node.hash.substring(0, 14) + '...' : 'Verified'}`
         ).join('\n');
       }
     }
 
-    // 2. Evaluate Adaptive Sync Engine (ASE) Gauges
+    // 2. Evaluate P2P Local Subnet Peers & HLC Log Views
+    const peersList = window.ASGOffline.getPeers ? window.ASGOffline.getPeers() : [];
+    const peersDisplay = document.getElementById('posa-peers-list-display');
+    const peersBadge = document.getElementById('posa-peers-badge');
+    const p2pMergeLog = document.getElementById('posa-p2p-merge-log');
+
+    if (peersBadge) peersBadge.innerText = `${Math.max(peersList.length, 1)} Active Local Peer(s)`;
+
+    if (peersDisplay) {
+      if (peersList.length === 0) {
+        peersDisplay.innerText = `// Active Local Subnet Peer: dev_self_${window.ASGOffline.getDeviceId ? window.ASGOffline.getDeviceId().substring(0, 10) : 'local'}\n// Open this app in a second browser tab to see multi-tab P2P peer discovery!`;
+      } else {
+        peersDisplay.innerText = peersList.map(p => `🟢 Peer ID: ${p.deviceId} | App: ${p.appId} | Status: ${p.status} | Last Seen: ${new Date(p.lastSeen).toLocaleTimeString()}`).join('\n');
+      }
+    }
+
+    if (p2pMergeLog) {
+      p2pMergeLog.innerText = `[${new Date().toLocaleTimeString()}] POSA P2P Subnet Sync Engine Ready.\n- Transport: BroadcastChannel / Local Subnet HTTP\n- Clock Engine: Hybrid Logical Clocks (HLC)\n- Conflict Strategy: Field-Level Merging (MERGE_FIELDS)`;
+    }
+
+    // 3. Evaluate Adaptive Sync Engine (ASE) Gauges
     if (window.ASGOffline.evaluateASEConditions) {
       const aseState = await window.ASGOffline.evaluateASEConditions();
       const elDecision = document.getElementById('ase-val-decision');
@@ -616,7 +671,7 @@ async function updatePOSADashboardView() {
       if (elBattery) elBattery.innerText = `⚡ ${Math.round(aseState.batteryLevel * 100)}% (${aseState.isCharging ? 'Charging' : 'Discharging'})`;
     }
 
-    // 3. Fetch POSA Stats & Conflict Logs from Server API
+    // 4. Fetch POSA Stats & Conflict Logs from Server API
     const res = await fetch('/api/v1/posa/stats/demo-app');
     const data = await res.json();
     const conflictLog = document.getElementById('posa-conflict-status-log');
