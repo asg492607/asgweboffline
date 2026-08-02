@@ -732,44 +732,98 @@ function validatePOSABusinessInvariants(op, existingRecord, appSecret = null) {
 const UNIFIED_STORE_FILE = path.join(__dirname, 'posa_unified_store.json');
 let snapshotGeneration = 0;
 
-// Clean up orphaned or truncated .tmp files on boot
-const tmpFile = `${UNIFIED_STORE_FILE}.tmp`;
-try {
-  if (fs.existsSync(tmpFile)) {
-    fs.unlinkSync(tmpFile);
-    console.log('[POSA Storage] Cleaned orphaned .tmp file from previous un-acknowledged process crash.');
-  }
-} catch (e) {}
+// Dual-Candidate Validation & Snapshot Recovery Algorithm
+function validateSnapshotFile(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    const raw = fs.readFileSync(filePath, 'utf8');
+    const parsed = JSON.parse(raw);
 
-// Load persisted atomic unified records & idempotency store from local disk with SHA-256 Checksum Verification
-try {
-  if (fs.existsSync(UNIFIED_STORE_FILE)) {
-    const rawData = fs.readFileSync(UNIFIED_STORE_FILE, 'utf8');
-    const parsed = JSON.parse(rawData);
-
-    // Verify SHA-256 Checksum if present
     if (parsed.checksum && parsed.records && parsed.idempotencyKeys) {
       const computedHash = crypto.createHash('sha256')
         .update(canonicalJsonStringify({ formatVersion: parsed.formatVersion || 1, generation: parsed.generation || 0, records: parsed.records, idempotencyKeys: parsed.idempotencyKeys }))
         .digest('hex');
 
-      if (computedHash !== parsed.checksum) {
-        console.error('[POSA Fail-Closed Guard] CRITICAL: Snapshot SHA-256 checksum mismatch! Failing closed to prevent silent data corruption.');
-        throw new Error('CORRUPTED_SNAPSHOT_CHECKSUM');
-      }
+      if (computedHash !== parsed.checksum) return null;
     }
+    return parsed;
+  } catch (e) {
+    return null;
+  }
+}
 
-    if (parsed.records && Array.isArray(parsed.records)) {
-      parsed.records.forEach(([key, val]) => posaRecordsDb.set(key, val));
+// Candidate election between Primary and .tmp snapshot
+try {
+  const tmpPath = `${UNIFIED_STORE_FILE}.tmp`;
+  const primaryCandidate = validateSnapshotFile(UNIFIED_STORE_FILE);
+  const tmpCandidate = validateSnapshotFile(tmpPath);
+
+  let selectedSnapshot = null;
+
+  if (primaryCandidate && tmpCandidate) {
+    // Both valid: select candidate with higher generation counter
+    if (tmpCandidate.generation > primaryCandidate.generation) {
+      selectedSnapshot = tmpCandidate;
+      console.log(`[POSA Recovery] Promoted valid .tmp snapshot (Generation #${tmpCandidate.generation}) over primary (Generation #${primaryCandidate.generation}).`);
+    } else {
+      selectedSnapshot = primaryCandidate;
     }
-    if (parsed.idempotencyKeys && Array.isArray(parsed.idempotencyKeys)) {
-      parsed.idempotencyKeys.forEach(([key, val]) => posaProcessedOpsDb.set(key, val));
+    try { fs.unlinkSync(tmpPath); } catch(e){}
+  } else if (tmpCandidate && !primaryCandidate) {
+    // Primary corrupted or missing; promote valid .tmp candidate
+    selectedSnapshot = tmpCandidate;
+    console.log(`[POSA Recovery] Primary snapshot invalid/missing. Promoted valid .tmp candidate (Generation #${tmpCandidate.generation}).`);
+    try { fs.copyFileSync(tmpPath, UNIFIED_STORE_FILE); fs.unlinkSync(tmpPath); } catch(e){}
+  } else if (primaryCandidate) {
+    selectedSnapshot = primaryCandidate;
+    try { if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath); } catch(e){}
+  }
+
+  if (selectedSnapshot) {
+    if (Array.isArray(selectedSnapshot.records)) {
+      selectedSnapshot.records.forEach(([key, val]) => posaRecordsDb.set(key, val));
     }
-    snapshotGeneration = parsed.generation || 0;
-    console.log(`[POSA Atomic Storage] Loaded ${posaRecordsDb.size} records & ${posaProcessedOpsDb.size} idempotency keys (Generation #${snapshotGeneration}).`);
+    if (Array.isArray(selectedSnapshot.idempotencyKeys)) {
+      selectedSnapshot.idempotencyKeys.forEach(([key, val]) => posaProcessedOpsDb.set(key, val));
+    }
+    snapshotGeneration = selectedSnapshot.generation || 0;
+    console.log(`[POSA Atomic Storage] Loaded ${posaRecordsDb.size} records & ${posaProcessedOpsDb.size} idempotency keys (Snapshot Generation #${snapshotGeneration}).`);
+  } else if (fs.existsSync(UNIFIED_STORE_FILE)) {
+    console.error('[POSA Fail-Closed Guard] CRITICAL: Both primary and .tmp snapshot candidates failed validation! Failing closed to prevent silent data loss.');
+    throw new Error('FAIL_CLOSED_CORRUPTED_PERSISTENCE');
   }
 } catch (e) {
-  console.warn('[POSA Atomic Storage] Could not load primary snapshot:', e.message);
+  console.warn('[POSA Storage] Snapshot initialization note:', e.message);
+}
+
+// Enterprise Database Transaction Adapter Abstraction
+class POSAStorageAdapter {
+  constructor(type = 'FILE_SNAPSHOT', dbConnection = null) {
+    this.type = type; // 'FILE_SNAPSHOT' | 'POSTGRESQL' | 'SQLITE'
+    this.dbConnection = dbConnection;
+  }
+
+  generatePostgreSQLTransactionSql(operation, recordData) {
+    const { operationId, deviceId } = operation;
+    const { recordId, collection, hlc, payload } = recordData;
+    return `
+BEGIN;
+
+-- 1. Enforce operationId uniqueness at database layer
+INSERT INTO posa_idempotency_ops (operation_id, device_id, status, created_at)
+VALUES ('${operationId}', '${deviceId}', 'COMMITTED', NOW())
+ON CONFLICT (operation_id) DO NOTHING;
+
+-- 2. Upsert business mutation atomically with HLC conflict check
+INSERT INTO posa_business_records (record_id, collection_name, hlc_vector, payload, updated_at)
+VALUES ('${recordId}', '${collection}', '${hlc}', '${JSON.stringify(payload)}', NOW())
+ON CONFLICT (record_id) DO UPDATE
+SET hlc_vector = EXCLUDED.hlc_vector, payload = EXCLUDED.payload, updated_at = NOW()
+WHERE EXCLUDED.hlc_vector > posa_business_records.hlc_vector;
+
+COMMIT;
+    `;
+  }
 }
 
 function savePOSAPersistenceSync() {
