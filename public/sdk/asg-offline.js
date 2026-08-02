@@ -989,6 +989,17 @@
               };
               continue;
             }
+
+            // Rule D: Sequential CREATE or UPDATE+CREATE -> Collapse into combined payload
+            if (item.action === 'CREATE') {
+              result[prevIndex] = {
+                ...prevItem,
+                payload: { ...prevItem.payload, ...item.payload },
+                timestamp: item.timestamp,
+                collapsedCount: (prevItem.collapsedCount || 1) + 1
+              };
+              continue;
+            }
           }
         }
 
