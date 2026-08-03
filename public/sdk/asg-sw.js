@@ -285,8 +285,8 @@ async function handleFirebaseAuthRequest(request) {
               localId: entitlement.localId,
               email: entitlement.email,
               displayName: entitlement.displayName,
-              idToken: entitlement.idToken,
-              refreshToken: entitlement.refreshToken,
+              idToken: `asg_offline_session_token_${entitlement.localId}`,
+              refreshToken: `asg_offline_session_refresh_${entitlement.localId}`,
               expiresIn: entitlement.expiresIn,
               registered: true,
               asgAuth: {
