@@ -13,46 +13,89 @@
       <span class="icon">📡</span>
       <span class="title">ASG Offline Inspector</span>
       <span id="badge-status" class="badge online">ONLINE</span>
+      <span id="badge-sdk" class="badge sdk">SDK READY</span>
     </div>
-    <button id="btn-refresh" class="btn btn-sm">🔄 Refresh Data</button>
+    <div class="header-actions">
+      <span id="val-device-id" class="device-id">device: —</span>
+      <button id="btn-refresh" class="btn btn-sm">🔄 Refresh</button>
+    </div>
   </header>
 
   <!-- Navigation Tabs -->
   <nav class="nav-tabs">
-    <button class="nav-tab active" data-tab="tab-overview">⚡ Overview</button>
-    <button class="nav-tab" data-tab="tab-cache">📦 Cache Storage (<span id="count-cache">0</span>)</button>
-    <button class="nav-tab" data-tab="tab-queue">📋 Offline Queue (<span id="count-queue">0</span>)</button>
-    <button class="nav-tab" data-tab="tab-db">🗄️ In-Browser DB</button>
+    <button class="nav-tab active"  data-tab="tab-overview">⚡ Overview</button>
+    <button class="nav-tab"         data-tab="tab-cache">📦 Cache (<span id="count-cache">0</span>)</button>
+    <button class="nav-tab"         data-tab="tab-queue">📋 POSA Queue (<span id="count-queue">0</span>)</button>
+    <button class="nav-tab"         data-tab="tab-dlq">☠️ DLQ (<span id="count-dlq">0</span>)</button>
+    <button class="nav-tab"         data-tab="tab-ade">🔍 ADE Map (<span id="count-ade">0</span>)</button>
+    <button class="nav-tab"         data-tab="tab-reconcile">✅ Reconciled (<span id="count-rec">0</span>)</button>
+    <button class="nav-tab"         data-tab="tab-db">🗄️ Local DB</button>
   </nav>
 
   <main class="content">
+
     <!-- TAB 1: OVERVIEW -->
     <div id="tab-overview" class="tab-pane active">
       <div class="metrics-grid">
         <div class="metric-card">
-          <div class="metric-label">App Identifier</div>
+          <div class="metric-label">App ID</div>
           <div id="val-app-id" class="metric-value">demo-app</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Network State</div>
+          <div class="metric-label">Network</div>
           <div id="val-net-state" class="metric-value highlight">Connected</div>
         </div>
         <div class="metric-card">
           <div class="metric-label">Service Worker</div>
-          <div id="val-sw-status" class="metric-value active">Active / Running</div>
+          <div id="val-sw-status" class="metric-value active">Active</div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Caching Strategy</div>
+          <div class="metric-label">Cache Strategy</div>
           <div id="val-strategy" class="metric-value">stale-while-revalidate</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">POSA Pending</div>
+          <div id="val-posa-count" class="metric-value warn">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Dead-Letter Ops</div>
+          <div id="val-dlq-count" class="metric-value danger">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">ADE Routes</div>
+          <div id="val-ade-count" class="metric-value active">0</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Reconciled</div>
+          <div id="val-rec-count" class="metric-value highlight">0</div>
         </div>
       </div>
 
       <div class="card">
-        <h3>⚡ Direct Engine Controls</h3>
+        <h3>⚡ Engine Controls</h3>
         <div class="btn-group">
-          <button id="btn-sim-offline" class="btn btn-warning">🔌 Toggle Simulated Offline</button>
-          <button id="btn-trigger-sync" class="btn btn-primary">🔄 Force Background Sync</button>
-          <button id="btn-clear-sw-cache" class="btn btn-danger">🗑️ Clear Cache Storage</button>
+          <button id="btn-trigger-posa" class="btn btn-primary">🔄 Force POSA Sync</button>
+          <button id="btn-trigger-ase"  class="btn btn-primary">🧠 Trigger ASE Eval</button>
+          <button id="btn-sim-offline"  class="btn btn-warning">🔌 Simulate Offline</button>
+          <button id="btn-clear-sw-cache" class="btn btn-danger">🗑️ Clear SW Cache</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🔄 Sync Router Status</h3>
+        <div id="sync-router-status" class="router-status">
+          <div class="router-row">
+            <span class="router-label">ASG Server Ops</span>
+            <span id="router-asg" class="router-val">—</span>
+          </div>
+          <div class="router-row">
+            <span class="router-label">Original Endpoint Ops</span>
+            <span id="router-replay" class="router-val">—</span>
+          </div>
+          <div class="router-row">
+            <span class="router-label">Last Sync Attempt</span>
+            <span id="router-last-sync" class="router-val">—</span>
+          </div>
         </div>
       </div>
     </div>
@@ -60,7 +103,7 @@
     <!-- TAB 2: CACHE STORAGE -->
     <div id="tab-cache" class="tab-pane">
       <div class="card-header">
-        <h3>Cached Static Assets & Resources</h3>
+        <h3>Cached Static Assets &amp; Resources</h3>
         <button id="btn-clear-cache-tab" class="btn btn-sm btn-danger">Clear All Cache</button>
       </div>
       <ul id="cache-list" class="data-list">
@@ -68,24 +111,84 @@
       </ul>
     </div>
 
-    <!-- TAB 3: OFFLINE QUEUE -->
+    <!-- TAB 3: POSA QUEUE -->
     <div id="tab-queue" class="tab-pane">
       <div class="card-header">
-        <h3>Pending Offline Request Queue (IndexedDB)</h3>
-        <button id="btn-flush-queue" class="btn btn-sm btn-primary">Flush & Replay Queue</button>
+        <h3>POSA Operation Journal — Pending Sync</h3>
+        <div class="btn-group">
+          <button id="btn-flush-queue" class="btn btn-sm btn-primary">▶ Force Replay All</button>
+        </div>
       </div>
-      <ul id="queue-list" class="data-list">
-        <li class="empty-msg">No pending requests in offline queue.</li>
-      </ul>
+      <div id="queue-list" class="op-list">
+        <div class="empty-msg">No pending POSA operations.</div>
+      </div>
     </div>
 
-    <!-- TAB 4: IN-BROWSER DB -->
+    <!-- TAB 4: DEAD LETTER QUEUE -->
+    <div id="tab-dlq" class="tab-pane">
+      <div class="card-header">
+        <h3>☠️ Dead-Letter Queue — Failed Operations</h3>
+        <div class="btn-group">
+          <button id="btn-retry-dlq"   class="btn btn-sm btn-warning">↩ Retry All</button>
+          <button id="btn-clear-dlq"   class="btn btn-sm btn-danger">🗑 Discard All</button>
+        </div>
+      </div>
+      <div class="dlq-explainer">
+        Operations land here when the server definitively rejected them (4xx business error),
+        or when a parent dependency failed. Provisional local data has been reverted.
+      </div>
+      <div id="dlq-list" class="op-list">
+        <div class="empty-msg">✅ No failed operations — dead-letter queue is clear.</div>
+      </div>
+    </div>
+
+    <!-- TAB 5: ADE INTEGRATION MAP -->
+    <div id="tab-ade" class="tab-pane">
+      <div class="card-header">
+        <h3>🔍 Auto-Discovery Engine — Integration Map</h3>
+        <div class="btn-group">
+          <button id="btn-sync-ade" class="btn btn-sm btn-primary">⬆ Push to Server</button>
+          <button id="btn-clear-ade" class="btn btn-sm btn-danger">🗑 Clear Map</button>
+        </div>
+      </div>
+      <div class="ade-explainer">
+        Routes learned by observing fetch() / XHR calls during online sessions.
+        The Sync Router uses these to replay offline ops to the correct backend endpoint.
+      </div>
+      <div class="ade-filters">
+        <button class="filter-btn active" data-filter="ALL">All</button>
+        <button class="filter-btn" data-filter="LOCAL_SAFE">🟢 LOCAL_SAFE</button>
+        <button class="filter-btn" data-filter="DEFERRED">🟡 DEFERRED</button>
+        <button class="filter-btn" data-filter="ONLINE_REQUIRED">🔴 ONLINE_REQUIRED</button>
+        <button class="filter-btn" data-filter="third-party">🌐 3rd Party</button>
+      </div>
+      <div id="ade-list" class="ade-list">
+        <div class="empty-msg">No API routes discovered yet. Browse the target website to populate this map.</div>
+      </div>
+    </div>
+
+    <!-- TAB 6: RECONCILIATION LOG -->
+    <div id="tab-reconcile" class="tab-pane">
+      <div class="card-header">
+        <h3>✅ Reconciliation Log — Local DB ↔ Server Truth</h3>
+      </div>
+      <div class="dlq-explainer">
+        Records that were successfully synced and then reconciled — provisional local state
+        replaced with authoritative server truth.
+      </div>
+      <div id="rec-list" class="op-list">
+        <div class="empty-msg">No reconciled records yet.</div>
+      </div>
+    </div>
+
+    <!-- TAB 7: LOCAL DB -->
     <div id="tab-db" class="tab-pane">
       <div class="card-header">
-        <h3>In-Browser Database Collections (`offline_records`)</h3>
+        <h3>In-Browser Database — offline_records</h3>
       </div>
       <pre id="db-records-pre" class="code-display">Loading IndexedDB records...</pre>
     </div>
+
   </main>
 
   <script src="panel.js"></script>

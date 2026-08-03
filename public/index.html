@@ -3,229 +3,279 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ASG Offline Web Service - Real Offline Engine & All-In-One Generator</title>
-  <meta name="description" content="Generate a complete, 1-step offline web engine and API sync solution for any web application.">
+  <title>ASG Offline Web Service — Developer Portal</title>
+  <meta name="description" content="Make any website work offline in 60 seconds. Enter your frontend and backend URL, get a 1-line embed and tailored backend receiver.">
   <link rel="stylesheet" href="/css/dashboard.css">
-  
-  <!-- ==================================================================== -->
-  <!-- 📡 ASG OFFLINE WEB SERVICE: ALL-IN-ONE FRONTEND INTEGRATION          -->
-  <!-- ==================================================================== -->
-  <script 
-    src="/sdk/asg-offline.js" 
-    data-app-id="asgweboffline-app">
-  </script>
-
-  <script>
-    // Real Client Setup & API Runtime Route Classification
-    window.addEventListener('DOMContentLoaded', () => {
-      console.log('⚡ ASG 3-Layer Platform Architecture Active');
-
-      if (window.ASGOffline) {
-        // Register Route Classification Modes (LOCAL_SAFE | DEFERRED | ONLINE_REQUIRED)
-        window.ASGOffline.registerRoute({ method: 'POST', path: '/api/products', mode: 'LOCAL_SAFE', collection: 'products' });
-        window.ASGOffline.registerRoute({ method: 'POST', path: '/api/orders', mode: 'DEFERRED', collection: 'orders' });
-        window.ASGOffline.registerRoute({ method: 'POST', path: '/api/payment', mode: 'ONLINE_REQUIRED', collection: 'payments' });
-
-        window.ASGOffline.onStatusChange((isOnline) => {
-          const statusLabel = document.getElementById('network-status-label');
-          if (statusLabel) {
-            statusLabel.innerText = isOnline ? '🟢 Online' : '📡 Offline Mode Active';
-            statusLabel.style.color = isOnline ? '#34d399' : '#fbbf24';
-          }
-        });
-      }
-
-      const serverBase = window.location.origin;
-
-      // 1-Line Operations API (Real Storage & Auto-Sync)
-      window.offlineApp = {
-        save: (collection, data) => window.ASGOffline.save(collection, data),
-        update: (collection, id, delta) => window.ASGOffline.update(collection, id, delta),
-        delete: (collection, id) => window.ASGOffline.delete(collection, id),
-        find: (collection) => window.ASGOffline.find(collection),
-        syncPost: (path, payload) => window.ASGOffline.syncPost(serverBase + path, payload),
-        syncPut: (path, payload) => window.ASGOffline.syncPut(serverBase + path, payload),
-        syncDelete: (path, payload) => window.ASGOffline.syncDelete(serverBase + path, payload),
-        fetch: (path, opts) => window.ASGOffline.fetch(serverBase + path, opts)
-      };
-    });
-  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="/sdk/asg-offline.js" data-app-id="asgweboffline-app"></script>
 </head>
 <body>
 
-  <!-- Top Header Navigation -->
+  <!-- ── Navbar ─────────────────────────────────────────────── -->
   <header class="navbar">
     <div class="brand">
       <div class="brand-icon">📡</div>
       <div>
         <span class="brand-title">ASG Offline Web Service</span>
-        <span class="brand-badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; margin-left: 8px;">⚡ 3-Layer Platform Engine</span>
+        <span class="brand-badge">Developer Portal</span>
       </div>
     </div>
-
-    <div class="status-indicator">
-      <span class="dot"></span>
-      <span id="network-status-label">Engine Active</span>
+    <div class="nav-status">
+      <div class="status-indicator">
+        <span class="dot" id="net-dot"></span>
+        <span id="network-status-label">Engine Active</span>
+      </div>
     </div>
   </header>
 
-  <main class="container" style="max-width: 1000px; margin: 0 auto; padding: 2rem 1rem;">
-    <!-- Hero Header -->
-    <section class="hero" style="text-align: center; margin-bottom: 2.5rem;">
-      <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 0.75rem; background: linear-gradient(135deg, #f8fafc, #818cf8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
-        Make Any Web App <span style="background: linear-gradient(135deg, #6366f1, #38bdf8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Work Offline & Sync Seamlessly</span>
-      </h1>
-      <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 650px; margin: 0 auto;">
-        Perform real-time data operations offline or online, and generate tailored all-in-one offline integration code.
-      </p>
+  <!-- ── Hero ───────────────────────────────────────────────── -->
+  <main class="container" style="max-width:1100px">
+
+    <section class="hero">
+      <div class="hero-eyebrow">⚡ One embed. Any website. Full offline support.</div>
+      <h1>Make Any Web App <span>Work Offline</span> in 60 Seconds</h1>
+      <p>Add the ASG SDK to enable offline caching, local operation capture, and automatic synchronization capabilities — without modifying your core business logic.</p>
+
+      <!-- Feature pills -->
+      <div class="feature-pills">
+        <span class="pill">🔄 Auto-sync on reconnect</span>
+        <span class="pill">📦 SW asset caching</span>
+        <span class="pill">🧠 AI route discovery</span>
+        <span class="pill">⚔️ HLC conflict resolution</span>
+        <span class="pill">🌐 Any framework</span>
+      </div>
     </section>
 
-    <!-- ⚡ Real Data Operations Manager & API Route Classifier -->
-    <div class="glass-card" style="margin-bottom: 2.5rem; border-color: rgba(99, 102, 241, 0.4); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.15);">
-      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-        <span style="font-size: 1.2rem; font-weight: 700; color: #818cf8;">⚡ Live Application Data Manager</span>
-        <span class="brand-badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8;">Local-First Persistence</span>
+    <!-- ── TAB NAV ─────────────────────────────────────────── -->
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="tab-create"  id="tabBtn-create">🚀 Create New App</button>
+      <button class="tab-btn"        data-tab="tab-myapps"  id="tabBtn-myapps">📋 My Apps</button>
+      <button class="tab-btn"        data-tab="tab-docs"    id="tabBtn-docs">📖 How It Works</button>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         TAB 1 — CREATE APP
+    ════════════════════════════════════════════════════════ -->
+    <div id="tab-create" class="tab-content active">
+
+      <!-- Registration Form -->
+      <div class="glass-card onboard-card" id="onboard-form-card">
+        <div class="card-title">
+          <span>🚀 Register Your App</span>
+          <span class="brand-badge" style="background:rgba(16,185,129,.15);color:#10b981">Takes 30 seconds</span>
+        </div>
+        <p class="card-subtitle">Enter your frontend URL and backend API URL. We'll generate everything — embed tag, backend receiver, and framework snippets.</p>
+
+        <form id="onboard-form" autocomplete="off" novalidate>
+          <div class="grid-2" style="gap:1.25rem;margin-bottom:1.25rem">
+            <div class="form-group" style="margin:0">
+              <label for="inp-appname">App Name</label>
+              <input type="text" id="inp-appname" class="form-control" placeholder="e.g. My Shop, Blog Platform, SaaS Dashboard" required>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label for="inp-email">Contact Email <span style="color:var(--text-dim);font-weight:400">(optional)</span></label>
+              <input type="email" id="inp-email" class="form-control" placeholder="dev@mycompany.com">
+            </div>
+          </div>
+          <div class="grid-2" style="gap:1.25rem;margin-bottom:1.5rem">
+            <div class="form-group" style="margin:0">
+              <label for="inp-frontend">🌐 Frontend URL</label>
+              <input type="url" id="inp-frontend" class="form-control" placeholder="https://my-shop.com" required>
+              <div class="field-hint">The URL where users visit your website</div>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label for="inp-backend">⚡ Backend API URL</label>
+              <input type="url" id="inp-backend" class="form-control" placeholder="https://api.my-shop.com" required>
+              <div class="field-hint">Your REST API base URL (where offline ops replay to)</div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg" id="btn-onboard">
+            <span class="btn-icon">🚀</span> Create App &amp; Generate Code
+          </button>
+        </form>
       </div>
-      <p class="card-subtitle" style="margin-bottom: 1.25rem;">
-        All operations run instantly in browser IndexedDB database when offline, and automatically sync to the server when online.
-      </p>
 
-      <!-- API Route Classification Modes Tester -->
-      <div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.25rem;">
-        <div style="font-size: 0.8rem; color: #818cf8; font-weight: 700; margin-bottom: 8px;">TEST ROUTE CLASSIFICATION MODES (ASG API Runtime Layer):</div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button id="btn-mode-local-safe" class="btn btn-secondary" style="background: rgba(16, 185, 129, 0.2); border: 1px solid var(--accent-emerald); color: #34d399; font-size: 0.8rem;">
-            🟢 LOCAL_SAFE (/api/products)
-          </button>
-          <button id="btn-mode-deferred" class="btn btn-secondary" style="background: rgba(245, 158, 11, 0.2); border: 1px solid var(--accent-amber); color: #fbbf24; font-size: 0.8rem;">
-            🟡 DEFERRED (/api/orders)
-          </button>
-          <button id="btn-mode-online-req" class="btn btn-secondary" style="background: rgba(244, 63, 94, 0.2); border: 1px solid var(--accent-rose); color: #fb7185; font-size: 0.8rem;">
-            🔴 ONLINE_REQUIRED (/api/payment)
-          </button>
-        </div>
-      </div>
+      <!-- ── RESULT PANEL (hidden until form submit) ───────── -->
+      <div id="result-panel" class="result-panel" style="display:none">
 
-      <!-- Real Record Entry Form -->
-      <form id="real-record-form" style="display: flex; gap: 10px; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: flex-end;">
-        <div style="flex: 2; min-width: 220px;">
-          <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px; font-weight: 600;">Item Title / Name</label>
-          <input type="text" id="rec-title-input" class="form-control" placeholder="e.g. Wireless Headphones" value="Enterprise Laptop" style="padding: 10px 14px;" required>
+        <!-- Success banner -->
+        <div class="success-banner">
+          <div class="success-icon">✅</div>
+          <div>
+            <div class="success-title">App Registered Successfully!</div>
+            <div class="success-sub" id="result-domain-line">—</div>
+          </div>
+          <div class="api-key-box">
+            <div class="api-key-label">⚠️ API Key — Save Now (shown once)</div>
+            <div class="api-key-row">
+              <code id="result-api-key" class="api-key-val">—</code>
+              <button class="copy-pill" id="btn-copy-apikey">Copy</button>
+            </div>
+          </div>
         </div>
-        <div style="flex: 1; min-width: 140px;">
-          <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px; font-weight: 600;">Price ($)</label>
-          <input type="number" id="rec-price-input" class="form-control" placeholder="999" value="1299" style="padding: 10px 14px;" required>
-        </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button type="submit" class="btn btn-primary" style="padding: 10px 18px; font-weight: 700; height: 42px;">
-            ➕ Save Record
-          </button>
-          <button type="button" id="btn-real-update" class="btn btn-secondary" style="background: rgba(6, 182, 212, 0.2); border: 1px solid var(--accent-cyan); color: #38bdf8; font-weight: 600; height: 42px;">
-            ✏️ Update Last Record
-          </button>
-          <button type="button" id="btn-real-delete" class="btn btn-secondary" style="background: rgba(244, 63, 94, 0.2); border: 1px solid var(--accent-rose); color: #fb7185; font-weight: 600; height: 42px;">
-            🗑️ Delete Last Record
-          </button>
-        </div>
-      </form>
 
-      <!-- Live Records Display Table -->
-      <div style="overflow-x: auto; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 0.5rem;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; color: #f8fafc;">
-          <thead>
-            <tr style="background: rgba(30, 41, 59, 0.8); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-              <th style="padding: 10px 14px; color: #818cf8;">Record ID</th>
-              <th style="padding: 10px 14px; color: #818cf8;">Title / Item</th>
-              <th style="padding: 10px 14px; color: #818cf8;">Price</th>
-              <th style="padding: 10px 14px; color: #818cf8;">Storage State</th>
-              <th style="padding: 10px 14px; color: #818cf8;">Last Updated</th>
-            </tr>
-          </thead>
-          <tbody id="real-records-table-body">
-            <tr>
-              <td colspan="5" style="padding: 16px; text-align: center; color: var(--text-muted);">
-                Loading local IndexedDB records...
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- App info strip -->
+        <div class="info-strip">
+          <div class="info-item"><span class="info-label">App ID</span><code id="result-appid">—</code></div>
+          <div class="info-item"><span class="info-label">Frontend</span><span id="result-frontend">—</span></div>
+          <div class="info-item"><span class="info-label">Backend</span><span id="result-backend">—</span></div>
+          <div class="info-item"><span class="info-label">Cache Strategy</span><span>stale-while-revalidate</span></div>
+        </div>
+
+        <!-- 1-line embed highlighted -->
+        <div class="embed-box">
+          <div class="embed-label">📋 1-Line Embed — Paste into your <code>&lt;head&gt;</code></div>
+          <div class="embed-tag-row">
+            <code id="result-embed-tag" class="embed-tag">—</code>
+            <button class="copy-pill" id="btn-copy-embed">Copy</button>
+          </div>
+        </div>
+
+        <!-- Snippet tabs -->
+        <div class="glass-card" style="padding:0;overflow:hidden">
+          <div class="snippet-tab-bar" role="tablist">
+            <button class="snippet-tab active" data-snippet="html">🌟 HTML</button>
+            <button class="snippet-tab"        data-snippet="node">⬛ Node.js</button>
+            <button class="snippet-tab"        data-snippet="python">🐍 Python</button>
+            <button class="snippet-tab"        data-snippet="php">🐘 PHP</button>
+            <button class="snippet-tab"        data-snippet="react">⚛️ React</button>
+            <button class="snippet-tab"        data-snippet="vue">🟢 Vue 3</button>
+            <button class="snippet-tab"        data-snippet="manifest">📱 manifest.json</button>
+          </div>
+          <div style="position:relative">
+            <button class="copy-pill copy-pill-code" id="btn-copy-snippet">Copy Code</button>
+            <pre id="snippet-display" class="snippet-code">// Select a tab above</pre>
+          </div>
+        </div>
+
+        <div class="next-steps">
+          <div class="next-step-title">⚡ What happens next?</div>
+          <div class="steps-grid">
+            <div class="step-card">
+              <div class="step-num">1</div>
+              <div class="step-body">
+                <strong>Paste embed tag</strong> into your frontend <code>&lt;head&gt;</code>. The SDK loads automatically.
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-num">2</div>
+              <div class="step-body">
+                <strong>Add backend receiver</strong> (copy the Node / Python / PHP tab) to accept offline sync replays.
+              </div>
+            </div>
+            <div class="step-card">
+              <div class="step-num">3</div>
+              <div class="step-body">
+                <strong>Done.</strong> Your users can now work offline. Ops queue locally and sync automatically on reconnect.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /result-panel -->
+    </div><!-- /tab-create -->
+
+    <!-- ════════════════════════════════════════════════════════
+         TAB 2 — MY APPS
+    ════════════════════════════════════════════════════════ -->
+    <div id="tab-myapps" class="tab-content">
+      <div class="glass-card" style="padding:0;overflow:hidden">
+        <div style="padding:1.5rem 1.75rem;border-bottom:1px solid var(--border-glass);display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div class="card-title" style="margin:0">📋 Registered Apps</div>
+            <div class="card-subtitle" style="margin:0.25rem 0 0">All apps registered to this ASG instance</div>
+          </div>
+          <button class="btn btn-secondary" id="btn-refresh-apps" style="font-size:.85rem">🔄 Refresh</button>
+        </div>
+        <div id="apps-table-container">
+          <div class="loading-row">Loading apps...</div>
+        </div>
       </div>
     </div>
 
-    <!-- 1-Click All-In-One Generator Card -->
-    <div class="glass-card" style="margin-bottom: 2.5rem; border-color: var(--border-accent); box-shadow: 0 10px 40px var(--primary-glow);">
-      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-        <span style="font-size: 1.2rem; font-weight: 700;">⚡ Instant All-In-One Generator</span>
-        <span class="brand-badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;">GET & POST API Ready</span>
-      </div>
-      <p class="card-subtitle" style="margin-bottom: 1.5rem;">
-        Provide your URLs to generate a tailored offline Service Worker, IndexedDB queueing system, and Express backend receiver API.
-      </p>
+    <!-- ════════════════════════════════════════════════════════
+         TAB 3 — HOW IT WORKS
+    ════════════════════════════════════════════════════════ -->
+    <div id="tab-docs" class="tab-content">
 
-      <form id="url-generator-form" style="display: flex; gap: 14px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: flex-end;">
-        <div style="flex: 1; min-width: 280px;">
-          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 600;">🌐 Frontend Web Application URL</label>
-          <input 
-            type="url" 
-            id="gen-url-input" 
-            class="form-control" 
-            placeholder="e.g. https://my-awesome-site.com" 
-            value="https://my-awesome-site.com" 
-            style="width: 100%; font-size: 0.95rem; padding: 12px 16px;" 
-            required
-          >
+      <div class="grid-3" style="margin-bottom:2rem">
+        <div class="doc-card">
+          <div class="doc-icon">📡</div>
+          <h3>Service Worker</h3>
+          <p>Caches all your static assets (HTML, CSS, JS, images) on first visit. Subsequent loads are instant — even offline.</p>
         </div>
-
-        <div style="flex: 1; min-width: 280px;">
-          <label style="font-size: 0.85rem; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 600;">⚡ Backend API Base URL</label>
-          <input 
-            type="url" 
-            id="gen-backend-api-input" 
-            class="form-control" 
-            placeholder="e.g. https://api.my-awesome-site.com" 
-            value="https://api.my-awesome-site.com" 
-            style="width: 100%; font-size: 0.95rem; padding: 12px 16px;" 
-            required
-          >
+        <div class="doc-card">
+          <div class="doc-icon">🧠</div>
+          <h3>ADE — Auto Discovery</h3>
+          <p>Watches every <code>fetch()</code> and <code>XHR</code> call during online sessions. Learns your API routes automatically.</p>
         </div>
-
-        <button type="submit" class="btn btn-primary" style="padding: 12px 24px; font-size: 0.95rem; height: 45px; font-weight: 700; white-space: nowrap;">
-          🚀 Generate All-In-One Solution
-        </button>
-      </form>
-
-      <!-- Dynamic Output Snippet Tabs -->
-      <div id="gen-results" style="display: block;">
-        <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-glass); padding-bottom: 8px; margin-bottom: 1rem; overflow-x: auto;">
-          <button class="btn btn-secondary snippet-tab active" data-snippet="allInOne" style="background: rgba(99, 102, 241, 0.25); border: 1px solid var(--accent-indigo); color: #818cf8; font-weight: bold;">🌟 All-In-One Frontend Bundle</button>
-          <button class="btn btn-secondary snippet-tab" data-snippet="backend">💻 Backend Receiver API</button>
-          <button class="btn btn-secondary snippet-tab" data-snippet="react">⚛️ React / Next.js</button>
-          <button class="btn btn-secondary snippet-tab" data-snippet="vue">🟢 Vue 3</button>
-          <button class="btn btn-secondary snippet-tab" data-snippet="sw">⚙️ Custom sw.js</button>
-          <button class="btn btn-secondary snippet-tab" data-snippet="manifest">📱 manifest.json</button>
+        <div class="doc-card">
+          <div class="doc-icon">📋</div>
+          <h3>POSA — Op Journal</h3>
+          <p>Every user action offline is stored in IndexedDB as a signed operation with HLC timestamp. Nothing is lost.</p>
         </div>
-
-        <div class="code-box" style="margin-top: 0; position: relative;">
-          <button class="btn btn-secondary copy-btn" data-copy="gen-code-display" style="position: absolute; top: 12px; right: 12px; font-size: 0.8rem; padding: 6px 12px;">Copy Code</button>
-          <pre id="gen-code-display" style="min-height: 240px; max-height: 420px; font-size: 0.85rem; line-height: 1.5; color: #f1f5f9; padding-top: 2rem;">// Enter your Frontend and Backend URLs above and click "Generate All-In-One Solution"!</pre>
+        <div class="doc-card">
+          <div class="doc-icon">🔄</div>
+          <h3>Sync Router</h3>
+          <p>On reconnect, queued ops are routed: ASG-apps batch to <code>/api/v1/posa/sync</code>, 3rd-party sites replay to their own endpoints.</p>
+        </div>
+        <div class="doc-card">
+          <div class="doc-icon">✅</div>
+          <h3>Reconciliation</h3>
+          <p>After replay, fetches authoritative server state and replaces provisional local data. Your UI always shows truth.</p>
+        </div>
+        <div class="doc-card">
+          <div class="doc-icon">⚔️</div>
+          <h3>Conflict Resolution</h3>
+          <p>HLC (Hybrid Logical Clocks) ensure multi-device operations merge deterministically using Last-Write-Wins or custom strategy.</p>
         </div>
       </div>
-    </div>
 
-    <!-- API Reference Card -->
-    <div class="glass-card">
-      <div class="card-title">
-        <span>🔗 REST API Single Endpoint Reference</span>
-        <span class="brand-badge">GET & POST /api/v1/all-in-one</span>
+      <div class="glass-card">
+        <div class="card-title">📐 Architecture Flow</div>
+        <div class="arch-flow">
+          <div class="arch-step">
+            <div class="arch-step-icon">👤</div>
+            <div class="arch-step-label">User Action</div>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-step">
+            <div class="arch-step-icon">📡</div>
+            <div class="arch-step-label">ASG SDK intercepts</div>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-step">
+            <div class="arch-step-icon">📦</div>
+            <div class="arch-step-label">IndexedDB (instant)</div>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-step">
+            <div class="arch-step-icon">🌐</div>
+            <div class="arch-step-label">Online? Sync Router</div>
+          </div>
+          <div class="arch-arrow">→</div>
+          <div class="arch-step">
+            <div class="arch-step-icon">✅</div>
+            <div class="arch-step-label">Server + Reconcile</div>
+          </div>
+        </div>
       </div>
-      <p class="card-subtitle">
-        You can also programmatically generate the full-stack offline solution directly via HTTP requests:
-      </p>
 
-      <div style="background: rgba(15, 23, 42, 0.7); padding: 1rem 1.25rem; border-radius: 0.5rem; font-family: monospace; font-size: 0.85rem; color: #38bdf8; margin-top: 1rem; border: 1px solid rgba(255,255,255,0.08);">
-        GET /api/v1/all-in-one?frontendUrl=https://my-app.com&backendApiUrl=https://api.my-app.com
+      <div class="glass-card" style="margin-top:1.5rem">
+        <div class="card-title">🔗 REST API Reference</div>
+        <div class="api-ref-list">
+          <div class="api-ref-row"><code class="method-post">POST</code><code>/api/v1/onboard</code><span>Register app, get API key + all snippets</span></div>
+          <div class="api-ref-row"><code class="method-get">GET</code><code>/api/v1/apps</code><span>List all registered apps</span></div>
+          <div class="api-ref-row"><code class="method-get">GET</code><code>/api/v1/apps/:appId</code><span>Get app config + embed tag</span></div>
+          <div class="api-ref-row"><code class="method-delete">DEL</code><code>/api/v1/apps/:appId</code><span>Delete app + revoke API key</span></div>
+          <div class="api-ref-row"><code class="method-post">POST</code><code>/api/v1/posa/sync</code><span>Receive offline op batches from SDK</span></div>
+          <div class="api-ref-row"><code class="method-get">GET</code><code>/api/v1/posa/records/:col/:id</code><span>Fetch authoritative record (reconciliation)</span></div>
+        </div>
       </div>
-    </div>
+
+    </div><!-- /tab-docs -->
+
   </main>
 
   <script src="/js/dashboard.js"></script>

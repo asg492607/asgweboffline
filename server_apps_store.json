@@ -44,7 +44,7 @@
       "backgroundColor": "#0f172a",
       "enableBackgroundSync": true,
       "enableOfflineNotifications": true,
-      "createdAt": "2026-08-02T20:27:37.607Z"
+      "createdAt": "2026-08-03T15:25:30.732Z"
     }
   ],
   [
@@ -93,6 +93,90 @@
       "enableOfflineNotifications": true,
       "cacheVersion": "v1.1785691599194",
       "updatedAt": "2026-08-02T17:26:39.194Z"
+    }
+  ],
+  [
+    "testshop-com-offline",
+    {
+      "appId": "testshop-com-offline",
+      "appName": "Test Shop",
+      "domain": "testshop.com",
+      "frontendUrl": "https://testshop.com",
+      "backendUrl": "https://api.testshop.com",
+      "websiteUrl": "https://testshop.com",
+      "backendApiUrl": "https://api.testshop.com",
+      "contactEmail": null,
+      "cacheStrategy": "stale-while-revalidate",
+      "themeColor": "#6366f1",
+      "backgroundColor": "#0f172a",
+      "enableBackgroundSync": true,
+      "enableOfflineNotifications": true,
+      "precacheUrls": [
+        "/",
+        "/index.html",
+        "/styles.css",
+        "/main.js",
+        "/favicon.ico"
+      ],
+      "createdAt": "2026-08-03T15:24:42.852Z",
+      "updatedAt": "2026-08-03T15:24:42.852Z",
+      "apiKeyHash": "1dc51d74fc3f08d866e184245fb179337d25ca9c83dec7d0ef4060535b344cee"
+    }
+  ],
+  [
+    "mystore-com-offline",
+    {
+      "appId": "mystore-com-offline",
+      "appName": "My E-Commerce Storet",
+      "domain": "mystore.com",
+      "frontendUrl": "https://mystore.com",
+      "backendUrl": "https://api.mystore.com",
+      "websiteUrl": "https://mystore.com",
+      "backendApiUrl": "https://api.mystore.com",
+      "contactEmail": null,
+      "cacheStrategy": "stale-while-revalidate",
+      "themeColor": "#6366f1",
+      "backgroundColor": "#0f172a",
+      "enableBackgroundSync": true,
+      "enableOfflineNotifications": true,
+      "precacheUrls": [
+        "/",
+        "/index.html",
+        "/styles.css",
+        "/main.js",
+        "/favicon.ico"
+      ],
+      "createdAt": "2026-08-03T15:27:04.074Z",
+      "updatedAt": "2026-08-03T15:27:04.074Z",
+      "apiKeyHash": "d1d145f56d8f646321525c7bdc57fd516e3800f5f4659a1f4796d2540324dcc1"
+    }
+  ],
+  [
+    "secureapp-com-offline",
+    {
+      "appId": "secureapp-com-offline",
+      "appName": "Secure App",
+      "domain": "secureapp.com",
+      "frontendUrl": "https://secureapp.com",
+      "backendUrl": "https://api.secureapp.com",
+      "websiteUrl": "https://secureapp.com",
+      "backendApiUrl": "https://api.secureapp.com",
+      "apiKeyHash": "3175411772b2a0c84ed7225fc7b870d39fd5eda8043f0ffb085009ba785b1734",
+      "contactEmail": null,
+      "cacheStrategy": "stale-while-revalidate",
+      "themeColor": "#6366f1",
+      "backgroundColor": "#0f172a",
+      "enableBackgroundSync": true,
+      "enableOfflineNotifications": true,
+      "precacheUrls": [
+        "/",
+        "/index.html",
+        "/styles.css",
+        "/main.js",
+        "/favicon.ico"
+      ],
+      "createdAt": "2026-08-03T15:35:30.682Z",
+      "updatedAt": "2026-08-03T15:35:30.682Z"
     }
   ]
 ]

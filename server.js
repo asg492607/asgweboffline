@@ -1,12 +1,30 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.set('trust proxy', 1);
-app.use(cors());
+// Per-app CORS: allow registered frontend origins + localhost dashboard
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '';
+  // Always allow same-origin and localhost dev
+  const allowedStaticOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+  // Check if origin matches any registered app's frontendUrl
+  const isRegisteredOrigin = Array.from(appsDb.values()).some(app => {
+    try { return new URL(app.frontendUrl || app.websiteUrl || '').origin === origin; } catch { return false; }
+  });
+  if (allowedStaticOrigins.includes(origin) || isRegisteredOrigin || !origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-ASG-API-Key, X-App-Id');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -21,6 +39,45 @@ app.use((req, res, next) => {
 const fs = require('fs');
 const APPS_FILE = path.join(__dirname, 'server_apps_store.json');
 const appsDb = new Map();
+// API Keys store: apiKeyHash → appId (for middleware validation)
+const apiKeysDb = new Map();
+
+// Hash API Key for secure storage & comparison
+function hashApiKey(key) {
+  if (!key) return '';
+  return crypto.createHash('sha256').update(key).digest('hex');
+}
+
+// API key generator (cryptographically strong random entropy)
+function generateApiKey() {
+  return 'asg_live_' + crypto.randomBytes(24).toString('hex');
+}
+
+// API Key Validation Middleware
+function validateApiKey(req, res, next) {
+  const apiKey = req.headers['x-asg-api-key'] || req.headers['authorization']?.replace(/^Bearer\s+/i, '');
+  const appId = req.body?.appId || req.query?.appId || req.headers['x-app-id'];
+
+  // Allow demo-app without key in development testing
+  if ((!appId || appId === 'demo-app') && !apiKey) {
+    req.appId = 'demo-app';
+    return next();
+  }
+
+  if (!apiKey) {
+    return res.status(401).json({ success: false, error: 'Unauthorized: Missing X-ASG-API-Key header.' });
+  }
+
+  const hash = hashApiKey(apiKey);
+  const matchedAppId = apiKeysDb.get(hash);
+
+  if (!matchedAppId || (appId && matchedAppId !== appId)) {
+    return res.status(401).json({ success: false, error: 'Unauthorized: Invalid or revoked API Key.' });
+  }
+
+  req.appId = matchedAppId;
+  next();
+}
 
 // Seed initial default app for demo
 appsDb.set('demo-app', {
@@ -59,8 +116,19 @@ try {
     const rawApps = fs.readFileSync(APPS_FILE, 'utf8');
     const parsedApps = JSON.parse(rawApps);
     if (Array.isArray(parsedApps)) {
-      parsedApps.forEach(([k, v]) => appsDb.set(k, v));
-      console.log(`[Apps Persistence] Loaded ${appsDb.size} app configurations from disk (${APPS_FILE}).`);
+      parsedApps.forEach(([k, v]) => {
+        appsDb.set(k, v);
+        if (v.apiKeyHash) {
+          apiKeysDb.set(v.apiKeyHash, v.appId);
+        } else if (v.apiKey) {
+          // Migrate legacy plain text key to hash
+          const hash = hashApiKey(v.apiKey);
+          v.apiKeyHash = hash;
+          delete v.apiKey;
+          apiKeysDb.set(hash, v.appId);
+        }
+      });
+      console.log(`[Apps Persistence] Loaded ${appsDb.size} app configurations & hashed API keys from disk (${APPS_FILE}).`);
     }
   }
 } catch (e) {
@@ -166,8 +234,454 @@ app.post('/api/v1/apps', (req, res) => {
 
 // GET List all apps
 app.get('/api/v1/apps', (req, res) => {
-  const apps = Array.from(appsDb.values());
-  res.json({ success: true, apps });
+  const apps = Array.from(appsDb.values()).map(a => ({
+    ...a,
+    apiKey: a.apiKey ? a.apiKey.substring(0, 12) + '••••••••••••••••••••' : null
+  }));
+  res.json({ success: true, apps, total: apps.length });
+});
+
+// GET App by ID
+app.get('/api/v1/apps/:appId', (req, res) => {
+  const config = appsDb.get(req.params.appId);
+  if (!config) return res.status(404).json({ success: false, error: `App '${req.params.appId}' not found.` });
+  const host = process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+  res.json({
+    success: true,
+    config: { ...config, apiKey: config.apiKey ? config.apiKey.substring(0, 12) + '•••' : null },
+    embedTag: `<script src="${host}/sdk/asg-offline.js" data-app-id="${config.appId}" data-api-key="${config.apiKey || ''}" data-server-url="${host}"></script>`
+  });
+});
+
+// DELETE App by ID
+app.delete('/api/v1/apps/:appId', (req, res) => {
+  const { appId } = req.params;
+  const config = appsDb.get(appId);
+  if (!config) return res.status(404).json({ success: false, error: `App '${appId}' not found.` });
+  // Remove associated API key
+  if (config.apiKey) apiKeysDb.delete(config.apiKey);
+  appsDb.delete(appId);
+  saveAppsPersistence();
+  res.json({ success: true, message: `App '${appId}' and its API key have been deleted.` });
+});
+
+// ============================================================
+// POST /api/v1/onboard — Primary Developer Registration Portal
+// Registers a new app, generates API key, returns all snippets
+// ============================================================
+app.post('/api/v1/onboard', (req, res) => {
+  let { appName, frontendUrl, backendUrl, contactEmail } = req.body;
+
+  if (!frontendUrl || !backendUrl) {
+    return res.status(400).json({ success: false, error: 'frontendUrl and backendUrl are required.' });
+  }
+
+  // Normalise URLs
+  if (!frontendUrl.startsWith('http')) frontendUrl = 'https://' + frontendUrl;
+  if (!backendUrl.startsWith('http')) backendUrl = 'https://' + backendUrl;
+
+  let parsedFront, parsedBack;
+  try {
+    parsedFront = new URL(frontendUrl);
+    parsedBack  = new URL(backendUrl);
+  } catch {
+    return res.status(400).json({ success: false, error: 'Invalid URL format for frontendUrl or backendUrl.' });
+  }
+
+  const domain   = parsedFront.hostname;
+  const appId    = domain.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() + '-offline';
+  appName        = appName || (domain.charAt(0).toUpperCase() + domain.slice(1) + ' Offline App');
+
+  // Reuse existing apiKey if app already registered, else generate fresh
+  const existing = appsDb.get(appId) || {};
+  const apiKey   = generateApiKey(); // Fresh raw key for response
+  const apiKeyHash = hashApiKey(apiKey);
+
+  const host = process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+
+  const appConfig = {
+    ...existing,
+    appId,
+    appName,
+    domain,
+    frontendUrl,
+    backendUrl,
+    websiteUrl: frontendUrl,
+    backendApiUrl: backendUrl,
+    apiKeyHash,
+    contactEmail: contactEmail || existing.contactEmail || null,
+    cacheStrategy: existing.cacheStrategy || 'stale-while-revalidate',
+    themeColor: '#6366f1',
+    backgroundColor: '#0f172a',
+    enableBackgroundSync: true,
+    enableOfflineNotifications: true,
+    precacheUrls: ['/', '/index.html', '/styles.css', '/main.js', '/favicon.ico'],
+    createdAt: existing.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  // Remove plaintext apiKey if present from legacy object
+  delete appConfig.apiKey;
+
+  appsDb.set(appId, appConfig);
+  apiKeysDb.set(apiKeyHash, appId);
+  saveAppsPersistence();
+
+  // ── Generate all code snippets ──────────────────────────────────────
+  const embedTag = `<script src="${host}/sdk/asg-offline.js" data-app-id="${appId}" data-api-key="${apiKey}" data-server-url="${host}"></script>`;
+
+  const htmlSnippet = `<!-- ================================================================ -->
+<!-- 📡 ASG OFFLINE WEB SERVICE — ${appName.toUpperCase()} -->
+<!-- Paste inside <head> of your ${frontendUrl} HTML               -->
+<!-- ================================================================ -->
+
+${embedTag}
+
+<script>
+  window.addEventListener('DOMContentLoaded', () => {
+    if (!window.ASGOffline) return;
+
+    // 1. React to online/offline changes
+    window.ASGOffline.onStatusChange((isOnline) => {
+      console.log(isOnline
+        ? '🟢 [${domain}] Back online — syncing queued operations...'
+        : '📡 [${domain}] Offline mode active — ops queued in IndexedDB');
+    });
+
+    // 2. Listen for reconciliation events (local DB updated with server truth)
+    window.addEventListener('asg:reconciled', (e) => {
+      console.log('[ASG] Reconciled:', e.detail.collection, e.detail.recordId);
+      // Re-render your UI here with fresh data
+    });
+
+    // 3. Register your backend API routes for offline classification
+    window.ASGOffline.registerRoute({ method: 'GET',    path: '/api/products',     mode: 'LOCAL_SAFE',     collection: 'products' });
+    window.ASGOffline.registerRoute({ method: 'POST',   path: '/api/products',     mode: 'LOCAL_SAFE',     collection: 'products' });
+    window.ASGOffline.registerRoute({ method: 'PUT',    path: '/api/products/:id', mode: 'DEFERRED',       collection: 'products' });
+    window.ASGOffline.registerRoute({ method: 'POST',   path: '/api/orders',       mode: 'DEFERRED',       collection: 'orders'   });
+    window.ASGOffline.registerRoute({ method: 'POST',   path: '/api/payment',      mode: 'ONLINE_REQUIRED',collection: 'payments' });
+
+    // 4. 1-Line App API wrappers pointing to your real backend
+    window.app = {
+      save:       (col, data)         => window.ASGOffline.save(col, data),
+      update:     (col, id, delta)    => window.ASGOffline.update(col, id, delta),
+      delete:     (col, id)           => window.ASGOffline.delete(col, id),
+      find:       (col)               => window.ASGOffline.find(col),
+      post:       (path, body)        => window.ASGOffline.syncPost('${backendUrl}' + path, body),
+      put:        (path, body)        => window.ASGOffline.syncPut('${backendUrl}' + path, body),
+      del:        (path, body)        => window.ASGOffline.syncDelete('${backendUrl}' + path, body),
+      fetch:      (path, opts)        => window.ASGOffline.fetch('${backendUrl}' + path, opts)
+    };
+
+    console.log('⚡ ASG Offline Engine ready for ${domain} — App ID: ${appId}');
+  });
+</script>`;
+
+  const nodeSnippet = `// ================================================================
+// ⚡ ASG OFFLINE SYNC RECEIVER — Node.js / Express
+// Add to your backend at: ${backendUrl}
+// ================================================================
+
+const express = require('express');
+const cors    = require('cors');
+const router  = express.Router();
+
+// Allow ASG server to POST sync data to your backend
+router.use(cors({ origin: '${host}', credentials: true }));
+
+/**
+ * ASG POSA Sync Receiver
+ * The ASG SDK replays offline operations here when the user reconnects.
+ * Each op has: { operationId, collection, action, payload, recordId, hlc }
+ */
+router.post('/api/v1/posa/sync', express.json(), async (req, res) => {
+  const { appId, deviceId, operations = [], conflictStrategy } = req.body;
+  console.log('[ASG POSA] Received', operations.length, 'offline ops from device', deviceId);
+
+  const processedIds    = [];
+  const deadLetterOps   = [];
+
+  for (const op of operations) {
+    try {
+      // --- Route op to your database logic ---
+      if (op.action === 'CREATE') {
+        // await db.collection(op.collection).insertOne({ _id: op.recordId, ...op.payload });
+        console.log('[ASG] CREATE', op.collection, op.recordId);
+      } else if (op.action === 'UPDATE') {
+        // await db.collection(op.collection).updateOne({ _id: op.recordId }, { \$set: op.payload });
+        console.log('[ASG] UPDATE', op.collection, op.recordId);
+      } else if (op.action === 'DELETE') {
+        // await db.collection(op.collection).deleteOne({ _id: op.recordId });
+        console.log('[ASG] DELETE', op.collection, op.recordId);
+      }
+      processedIds.push(op.operationId);
+    } catch (err) {
+      // Move to dead-letter queue on your server
+      deadLetterOps.push({ operationId: op.operationId, reason: err.message });
+      console.error('[ASG DLQ] Failed op', op.operationId, err.message);
+    }
+  }
+
+  res.json({
+    success: true,
+    syncedOperationIds: processedIds,
+    deadLetterOperations: deadLetterOps,
+    serverTimestamp: new Date().toISOString()
+  });
+});
+
+module.exports = router;`;
+
+  const pythonSnippet = `# ================================================================
+# ⚡ ASG OFFLINE SYNC RECEIVER — Python / FastAPI
+# Add to your backend at: ${backendUrl}
+# ================================================================
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+import logging
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['${host}', '${frontendUrl}'],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
+
+@app.post('/api/v1/posa/sync')
+async def posa_sync(request: Request):
+    body = await request.json()
+    operations  = body.get('operations', [])
+    device_id   = body.get('deviceId', 'unknown')
+    app_id      = body.get('appId', '${appId}')
+
+    logging.info(f'[ASG POSA] {len(operations)} ops from {device_id}')
+
+    processed_ids   = []
+    dead_letter_ops = []
+
+    for op in operations:
+        try:
+            action     = op.get('action')
+            collection = op.get('collection')
+            payload    = op.get('payload', {})
+            record_id  = op.get('recordId')
+
+            if action == 'CREATE':
+                # await db[collection].insert_one({'_id': record_id, **payload})
+                logging.info(f'[ASG] CREATE {collection} {record_id}')
+            elif action == 'UPDATE':
+                # await db[collection].update_one({'_id': record_id}, {'\$set': payload})
+                logging.info(f'[ASG] UPDATE {collection} {record_id}')
+            elif action == 'DELETE':
+                # await db[collection].delete_one({'_id': record_id})
+                logging.info(f'[ASG] DELETE {collection} {record_id}')
+
+            processed_ids.append(op['operationId'])
+        except Exception as e:
+            dead_letter_ops.append({'operationId': op['operationId'], 'reason': str(e)})
+
+    return {
+        'success': True,
+        'syncedOperationIds': processed_ids,
+        'deadLetterOperations': dead_letter_ops,
+        'serverTimestamp': datetime.utcnow().isoformat()
+    }`;
+
+  const phpSnippet = `<?php
+// ================================================================
+// ⚡ ASG OFFLINE SYNC RECEIVER — PHP
+// Add this file to your backend at: ${backendUrl}/api/v1/posa/sync
+// ================================================================
+
+header('Access-Control-Allow-Origin: ${host}');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, X-ASG-API-Key');
+header('Content-Type: application/json');
+
+if (\$_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
+
+\$body       = json_decode(file_get_contents('php://input'), true) ?? [];
+\$operations = \$body['operations'] ?? [];
+\$device_id  = \$body['deviceId']   ?? 'unknown';
+\$app_id     = \$body['appId']      ?? '${appId}';
+
+error_log('[ASG POSA] ' . count(\$operations) . ' ops from ' . \$device_id);
+
+\$processed_ids    = [];
+\$dead_letter_ops  = [];
+
+foreach (\$operations as \$op) {
+    try {
+        \$action     = \$op['action'];
+        \$collection = \$op['collection'];
+        \$payload    = \$op['payload'] ?? [];
+        \$record_id  = \$op['recordId'];
+
+        if (\$action === 'CREATE') {
+            // \$db->insert(\$collection, array_merge(['id' => \$record_id], \$payload));
+        } elseif (\$action === 'UPDATE') {
+            // \$db->update(\$collection, ['id' => \$record_id], \$payload);
+        } elseif (\$action === 'DELETE') {
+            // \$db->delete(\$collection, ['id' => \$record_id]);
+        }
+        \$processed_ids[] = \$op['operationId'];
+    } catch (Exception \$e) {
+        \$dead_letter_ops[] = ['operationId' => \$op['operationId'], 'reason' => \$e->getMessage()];
+    }
+}
+
+echo json_encode([
+    'success'              => true,
+    'syncedOperationIds'   => \$processed_ids,
+    'deadLetterOperations' => \$dead_letter_ops,
+    'serverTimestamp'      => date('c')
+]);`;
+
+  const reactSnippet = `// ================================================================
+// ⚡ ASG OFFLINE WEB SERVICE — React / Next.js Integration
+// ================================================================
+import { useEffect, useRef, useState, useCallback } from 'react';
+
+export function useASGOffline() {
+  const [isOnline, setIsOnline]   = useState(navigator.onLine);
+  const [queueSize, setQueueSize] = useState(0);
+  const sdkRef = useRef(null);
+
+  useEffect(() => {
+    const script = Object.assign(document.createElement('script'), {
+      src: '${host}/sdk/asg-offline.js',
+      async: true,
+      dataset: { appId: '${appId}', apiKey: '${apiKey}', serverUrl: '${host}' }
+    });
+
+    script.onload = () => {
+      const sdk = window.ASGOffline;
+      sdkRef.current = sdk;
+      if (!sdk) return;
+
+      setIsOnline(sdk.isOnline);
+      sdk.onStatusChange(setIsOnline);
+      sdk.onQueueChange((count) => setQueueSize(count));
+
+      // Register your routes
+      sdk.registerRoute({ method: 'POST', path: '/api/items',   mode: 'LOCAL_SAFE', collection: 'items' });
+      sdk.registerRoute({ method: 'POST', path: '/api/orders',  mode: 'DEFERRED',   collection: 'orders' });
+      sdk.registerRoute({ method: 'POST', path: '/api/payment', mode: 'ONLINE_REQUIRED', collection: 'payments' });
+
+      // Listen for reconciliation (local → server truth replacement)
+      window.addEventListener('asg:reconciled', (e) => {
+        console.log('[ASG] Reconciled record:', e.detail);
+        // Trigger a React state refresh or React Query invalidation here
+      });
+    };
+
+    document.head.appendChild(script);
+    return () => document.head.removeChild(script);
+  }, []);
+
+  const save   = useCallback((col, data)       => sdkRef.current?.save(col, data),          []);
+  const update = useCallback((col, id, delta)   => sdkRef.current?.update(col, id, delta),   []);
+  const remove = useCallback((col, id)           => sdkRef.current?.delete(col, id),           []);
+  const find   = useCallback((col)               => sdkRef.current?.find(col),                 []);
+
+  return { isOnline, queueSize, save, update, remove, find, sdk: sdkRef };
+}
+
+// Example usage in a component:
+export default function ProductPage() {
+  const { isOnline, queueSize, save, find } = useASGOffline();
+
+  const handleAddProduct = async () => {
+    await save('products', { name: 'New Product', price: 99 });
+  };
+
+  return (
+    <div>
+      <p>{isOnline ? '🟢 Online' : '📡 Offline (' + queueSize + ' ops queued)'}</p>
+      <button onClick={handleAddProduct}>Add Product (works offline!)</button>
+    </div>
+  );
+}`;
+
+  const vueSnippet = `<!-- ================================================================
+     ⚡ ASG OFFLINE WEB SERVICE — Vue 3 Composable
+     ================================================================ -->
+<script setup>
+import { ref, onMounted, onUnmounted } from 'vue';
+
+const isOnline  = ref(navigator.onLine);
+const queueSize = ref(0);
+let sdk = null;
+
+onMounted(() => {
+  const script = document.createElement('script');
+  script.src = '${host}/sdk/asg-offline.js';
+  script.dataset.appId     = '${appId}';
+  script.dataset.apiKey    = '${apiKey}';
+  script.dataset.serverUrl = '${host}';
+
+  script.onload = () => {
+    sdk = window.ASGOffline;
+    isOnline.value = sdk.isOnline;
+    sdk.onStatusChange((online) => { isOnline.value = online; });
+    sdk.onQueueChange((count)   => { queueSize.value = count; });
+
+    // Register routes
+    sdk.registerRoute({ method: 'POST', path: '/api/items',   mode: 'LOCAL_SAFE', collection: 'items' });
+    sdk.registerRoute({ method: 'POST', path: '/api/orders',  mode: 'DEFERRED',   collection: 'orders' });
+    sdk.registerRoute({ method: 'POST', path: '/api/payment', mode: 'ONLINE_REQUIRED', collection: 'payments' });
+  };
+
+  document.head.appendChild(script);
+});
+
+onUnmounted(() => { sdk = null; });
+<\/script>
+
+<template>
+  <div class="asg-status">
+    <span v-if="isOnline">🟢 Online</span>
+    <span v-else>📡 Offline — {{ queueSize }} op(s) queued</span>
+  </div>
+</template>`;
+
+  const manifestJson = JSON.stringify({
+    short_name: appName,
+    name: appName,
+    description: `${appName} — Offline-ready web application powered by ASG Offline Web Service`,
+    start_url: '/',
+    display: 'standalone',
+    background_color: '#0f172a',
+    theme_color: '#6366f1',
+    icons: [
+      { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+    ]
+  }, null, 2);
+
+  res.json({
+    success: true,
+    appId,
+    apiKey,                // Show ONCE — developer must save it
+    domain,
+    frontendUrl,
+    backendUrl,
+    embedTag,
+    message: `App '${appId}' registered. Save your API key — it is shown only once.`,
+    snippets: {
+      html:     htmlSnippet,
+      node:     nodeSnippet,
+      python:   pythonSnippet,
+      php:      phpSnippet,
+      react:    reactSnippet,
+      vue:      vueSnippet,
+      manifest: manifestJson
+    }
+  });
 });
 
 // POST Generate custom SW script, Manifest, HTML & React code snippets by URL
@@ -888,9 +1402,107 @@ app.post('/api/v1/alerts', (req, res) => {
 });
 
 
+// ==================== PHASE A: ADE (AUTO-DISCOVERY ENGINE) SERVER APIs ====================
+
+// In-memory ADE manifest store (keyed by appId)
+const adeManifestDb = new Map();
+
+/**
+ * GET /api/v1/ade/manifest?appId=X
+ * Returns the server-stored API manifest for an application.
+ * Clients can retrieve previously discovered routes on page load.
+ */
+app.get('/api/v1/ade/manifest', (req, res) => {
+  const { appId } = req.query;
+  if (!appId) return res.status(400).json({ success: false, error: 'appId is required' });
+
+  const manifest = adeManifestDb.get(appId) || {};
+  res.json({
+    success: true,
+    appId,
+    routeCount: Object.keys(manifest).length,
+    manifest,
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
+ * POST /api/v1/ade/manifest
+ * Body: { appId, manifest: { "GET:/api/products": { method, path, offlineMode, confidence, ... } } }
+ * Persists client-discovered API manifest to server for cross-session sharing.
+ */
+app.post('/api/v1/ade/manifest', validateApiKey, (req, res) => {
+  const { appId, manifest } = req.body;
+  if (!appId || !manifest) {
+    return res.status(400).json({ success: false, error: 'appId and manifest are required' });
+  }
+
+  const existing = adeManifestDb.get(appId) || {};
+
+  // Merge new discoveries with existing manifest, preferring higher confidence entries
+  for (const [routeKey, entry] of Object.entries(manifest)) {
+    const prev = existing[routeKey];
+    if (!prev || (entry.confidence || 0) > (prev.confidence || 0) || (entry.observationCount || 0) > (prev.observationCount || 0)) {
+      existing[routeKey] = {
+        ...entry,
+        serverReceivedAt: new Date().toISOString()
+      };
+    }
+  }
+
+  adeManifestDb.set(appId, existing);
+
+  console.log(`[ADE Server] Manifest for '${appId}' updated: ${Object.keys(existing).length} total routes.`);
+  res.json({
+    success: true,
+    appId,
+    totalRoutes: Object.keys(existing).length,
+    message: `API manifest updated with ${Object.keys(manifest).length} client-discovered routes.`
+  });
+});
+
+/**
+ * GET /api/v1/ade/classify?path=X&method=Y
+ * Classify a single API path against business-safety heuristics.
+ */
+app.get('/api/v1/ade/classify', (req, res) => {
+  const { path: apiPath, method = 'GET' } = req.query;
+  if (!apiPath) return res.status(400).json({ success: false, error: 'path is required' });
+
+  const dangerKeywords = ['payment', 'pay', 'charge', 'auth', 'otp', 'token', 'webhook', 'stripe', 'razorpay'];
+  const deferKeywords = ['order', 'checkout', 'submit', 'book', 'reserve', 'transfer'];
+
+  let offlineMode = 'LOCAL_SAFE';
+  let confidence = 75;
+  let reason = 'Standard CRUD operation';
+
+  if (dangerKeywords.some(kw => apiPath.toLowerCase().includes(kw))) {
+    offlineMode = 'ONLINE_REQUIRED';
+    confidence = 15;
+    reason = 'Payment, auth, or external service endpoint — server validation required';
+  } else if (deferKeywords.some(kw => apiPath.toLowerCase().includes(kw)) && method !== 'GET') {
+    offlineMode = 'DEFERRED';
+    confidence = 55;
+    reason = 'Business transaction — local capture, server validation deferred';
+  } else if (method === 'GET') {
+    offlineMode = 'LOCAL_SAFE';
+    confidence = 90;
+    reason = 'Read operation — served from local IndexedDB replica offline';
+  }
+
+  res.json({
+    success: true,
+    path: apiPath,
+    method: method.toUpperCase(),
+    offlineMode,
+    confidence,
+    reason
+  });
+});
+
+
 // ==================== POSA (PERSISTENT OFFLINE SYNCHRONIZATION ALGORITHM) APIS ====================
 
-const crypto = require('crypto');
 
 // Server-side POSA Storage and Logs
 const PERSISTENCE_FILE = path.join(__dirname, 'posa_records_store.json');
@@ -1164,6 +1776,35 @@ function compareHLC(hlcA, hlcB) {
   }
 }
 
+// GET Authoritative Record by collection + recordId (Used by Reconciliation Engine)
+// Called by client after a successful sync replay to fetch the canonical server state
+// and replace the provisional local IndexedDB record.
+app.get('/api/v1/posa/records/:collection/:recordId', (req, res) => {
+  const { collection, recordId } = req.params;
+  const key = `${collection}:${recordId}`;
+  const record = posaRecordsDb.get(key);
+
+  if (!record) {
+    return res.status(404).json({
+      success: false,
+      error: `Record '${key}' not found in authoritative store.`,
+      collection,
+      recordId
+    });
+  }
+
+  res.json({
+    success: true,
+    source: 'posa_authoritative_store',
+    collection,
+    recordId,
+    record: record.payload,
+    hlc: record.hlc,
+    updatedAt: record.updatedAt,
+    serverTimestamp: new Date().toISOString()
+  });
+});
+
 // GET POSA Engine & Server Health Ping (Used by Adaptive Sync Engine - ASE)
 app.get('/api/v1/posa/health', (req, res) => {
   res.json({
@@ -1237,7 +1878,7 @@ app.post('/api/v1/posa/peer-sync', (req, res) => {
 });
 
 // POST POSA DAG Batch Synchronization Endpoint
-app.post('/api/v1/posa/sync', (req, res) => {
+app.post('/api/v1/posa/sync', validateApiKey, (req, res) => {
   const { appId, deviceId, conflictStrategy, operations } = req.body;
 
   if (!operations || !Array.isArray(operations)) {

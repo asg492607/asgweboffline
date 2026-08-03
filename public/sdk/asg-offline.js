@@ -30,6 +30,9 @@
       this.queueListeners = [];
       this.isSyncing = false;
       this.registeredRoutes = new Map();
+      this.discoveredRoutes = new Map(); // Phase A: ADE discovered routes
+      this._replayInFlight = new Set();  // Guard against self-observation loops during replay
+      this.tempIdMap = new Map();        // Temporary ID Mapping Store (tempId -> serverId)
 
       // Default registered routes for demonstration
       this.registerRoute({ method: 'POST', path: '/api/products', mode: 'LOCAL_SAFE', collection: 'products' });
@@ -59,19 +62,21 @@
       // 3. Initialize IndexedDB for offline queue
       await this.initIndexedDB();
 
-      // 4. Trigger cold-start background sync if online
+      // 4. Phase A: Start Auto-Discovery Engine (ADE)
+      this.startAutoDiscovery();
+
+      // 5. Trigger cold-start background sync if online
       if (this.isOnline) {
         this.processOfflineQueue();
       }
 
-      // 5. Attach online/offline event listeners
+      // 6. Attach online/offline event listeners
       this.setupNetworkListeners();
 
-      // 6. Render toast notification container
+      // 7. Render toast notification container
       this.renderNotificationToast();
-      // Mandatory branding watermark removed per configuration
 
-      // 7. Log telemetry
+      // 8. Log telemetry
       this.sendTelemetry('SDK_INITIALIZED', { isOnline: this.isOnline });
     }
 
@@ -157,7 +162,7 @@
 
       return new Promise((resolve) => {
         try {
-          const request = indexedDB.open('ASG_Offline_DB', 5);
+          const request = indexedDB.open('ASG_Offline_DB', 7);
 
           request.onupgradeneeded = (e) => {
             const db = e.target.result;
@@ -184,6 +189,18 @@
             }
             if (!db.objectStoreNames.contains('hlc_clocks')) {
               db.createObjectStore('hlc_clocks', { keyPath: 'deviceId' });
+            }
+            // Phase A: ADE API Manifest Store
+            if (!db.objectStoreNames.contains('api_manifest')) {
+              const mStore = db.createObjectStore('api_manifest', { keyPath: 'routeKey' });
+              mStore.createIndex('offline', 'offline', { unique: false });
+              mStore.createIndex('confidence', 'confidence', { unique: false });
+            }
+            // Phase C: Reconciliation Log Store
+            if (!db.objectStoreNames.contains('posa_reconciliation_log')) {
+              const recStore = db.createObjectStore('posa_reconciliation_log', { keyPath: 'operationId' });
+              recStore.createIndex('status', 'status', { unique: false });
+              recStore.createIndex('reconciledAt', 'reconciledAt', { unique: false });
             }
           };
 
@@ -310,6 +327,517 @@
         this.sendTelemetry('OFFLINE_FALLBACK', { status: 'offline' });
       });
     }
+
+    // =====================================================================
+    // PHASE A: AUTO-DISCOVERY ENGINE (ADE)
+    // Learns the app's API surface automatically, so ASG knows what to
+    // intercept when the application goes offline — without requiring the
+    // developer to manually configure every endpoint.
+    // =====================================================================
+
+    startAutoDiscovery() {
+      if (!this.isOnline) {
+        console.log('[ADE] Offline at startup — skipping discovery, loading saved manifest.');
+        this.loadManifestFromIndexedDB();
+        return;
+      }
+
+      console.log('[ADE] Starting Auto-Discovery Engine (ADE)...');
+
+      // Source 1: Patch fetch to observe all network traffic (always-on)
+      this._patchFetchForDiscovery();
+
+      // Source 2: Patch XHR for legacy XMLHttpRequest traffic
+      this._patchXHRForDiscovery();
+
+      // Source 3: Patch form submissions to intercept offline forms and feed ADE
+      this._patchFormSubmissions();
+
+      // Run remaining discovery after page and scripts finish loading
+      if (document.readyState === 'complete') {
+        this._runBootstrapDiscovery();
+      } else {
+        window.addEventListener('load', () => this._runBootstrapDiscovery());
+      }
+    }
+
+    _patchFetchForDiscovery() {
+      const self = this;
+      const originalFetch = window.fetch.bind(window);
+
+      window.fetch = async function(input, options = {}) {
+        const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : String(input));
+        const method = (options.method || (input instanceof Request ? input.method : 'GET') || 'GET').toUpperCase();
+
+        let requestBody = null;
+        if (options.body) {
+          try { requestBody = typeof options.body === 'string' ? JSON.parse(options.body) : options.body; } catch (e) {}
+        }
+
+        // Capture request headers for replay (auth tokens, content-type, etc.)
+        let capturedHeaders = {};
+        try {
+          const hdrs = options.headers || (input instanceof Request ? input.headers : null);
+          if (hdrs) {
+            if (hdrs instanceof Headers) {
+              hdrs.forEach((v, k) => { capturedHeaders[k] = v; });
+            } else if (typeof hdrs === 'object') {
+              capturedHeaders = { ...hdrs };
+            }
+          }
+        } catch (e) {}
+
+        const response = await originalFetch(input, options);
+        const cloned = response.clone();
+
+        // Observe same-origin API calls AND cross-origin calls (for 3rd-party website support)
+        try {
+          const parsed = new URL(url, window.location.origin);
+
+          // Guard against observing self-initiated replay requests
+          if (self._replayInFlight.has(url) || self._replayInFlight.has(parsed.href)) {
+            return response;
+          }
+
+          const isSameOrigin = parsed.origin === window.location.origin;
+          const isApiPath = parsed.pathname.startsWith('/api') || parsed.pathname.startsWith('/v') ||
+                            parsed.pathname.includes('/api/') || parsed.pathname.includes('/rest/');
+          // Cross-origin: observe any non-GET that looks like an API (has JSON content-type or /api path)
+          const isCrossOriginAPI = !isSameOrigin && (
+            isApiPath ||
+            (capturedHeaders['Content-Type'] || '').includes('application/json') ||
+            method !== 'GET'
+          );
+
+          if (isSameOrigin && isApiPath || isCrossOriginAPI) {
+            let responseBody = null;
+            try { responseBody = await cloned.json(); } catch (e) {}
+            self._observeAPICall(method, parsed.pathname, requestBody, responseBody, response.status, parsed.origin, parsed.href, capturedHeaders);
+          }
+        } catch (e) {}
+
+        return response;
+      };
+    }
+
+    _patchXHRForDiscovery() {
+      const self = this;
+      const OriginalXHR = window.XMLHttpRequest;
+
+      window.XMLHttpRequest = function() {
+        const xhr = new OriginalXHR();
+        let _method = 'GET';
+        let _url = '';
+        let _requestBody = null;
+
+        const originalOpen = xhr.open.bind(xhr);
+        xhr.open = function(method, url, ...rest) {
+          _method = (method || 'GET').toUpperCase();
+          try {
+            const parsed = new URL(url, window.location.origin);
+            _url = parsed.pathname;
+          } catch (e) { _url = url; }
+          return originalOpen(method, url, ...rest);
+        };
+
+        const originalSend = xhr.send.bind(xhr);
+        xhr.send = function(body) {
+          if (body) {
+            try { _requestBody = typeof body === 'string' ? JSON.parse(body) : body; } catch (e) {}
+          }
+          xhr.addEventListener('load', () => {
+            if (_url && (_url.startsWith('/api') || _url.startsWith('/v'))) {
+              let responseBody = null;
+              try { responseBody = JSON.parse(xhr.responseText); } catch (e) {}
+              self._observeAPICall(_method, _url, _requestBody, responseBody, xhr.status);
+            }
+          });
+          return originalSend(body);
+        };
+
+        return xhr;
+      };
+
+      // Copy prototype
+      window.XMLHttpRequest.prototype = OriginalXHR.prototype;
+    }
+
+    _patchFormSubmissions() {
+      const self = this;
+      document.addEventListener('submit', function(e) {
+        const form = e.target;
+        if (!form || form.tagName !== 'FORM') return;
+
+        const actionAttr = form.getAttribute('action') || window.location.pathname;
+        const methodAttr = (form.getAttribute('method') || 'POST').toUpperCase();
+        let parsedAction;
+        try {
+          parsedAction = new URL(actionAttr, window.location.origin);
+        } catch (err) {
+          parsedAction = { pathname: actionAttr, origin: window.location.origin, href: window.location.origin + actionAttr };
+        }
+
+        // Extract form values as a JSON payload
+        const formData = new FormData(form);
+        const payload = {};
+        formData.forEach((value, key) => {
+          if (payload[key]) {
+            if (!Array.isArray(payload[key])) payload[key] = [payload[key]];
+            payload[key].push(value);
+          } else {
+            payload[key] = value;
+          }
+        });
+
+        const pathParts = parsedAction.pathname.replace(/^\/api\/v?\d*\//, '').replace(/^\//, '').split('/');
+        const collection = pathParts[0] || 'form_submissions';
+
+        // Observe form submission for ADE API discovery
+        self._observeAPICall(methodAttr, parsedAction.pathname, payload, null, 200, parsedAction.origin, parsedAction.href);
+
+        // If offline: prevent default navigation, capture in POSA journal
+        if (!self.isOnline) {
+          e.preventDefault();
+          console.log(`[Form Capture] Offline form submission intercepted: [${methodAttr}] ${parsedAction.pathname}`);
+          self.posaQueueOperation({
+            collection,
+            action: methodAttr === 'GET' ? 'QUERY' : 'CREATE',
+            payload,
+            priority: 'HIGH'
+          });
+          self.showToast('📋 Form Saved Offline', 'Form submission captured locally. Will sync automatically when online.', 'warning');
+        }
+      }, true);
+    }
+
+    _observeAPICall(method, pathname, requestBody, responseBody, status, origin = null, resolvedHref = null, capturedHeaders = {}) {
+      const effectiveOrigin = origin || window.location.origin;
+      const routeKey = `${method}:${effectiveOrigin}:${this._normalizePathname(pathname)}`;
+
+      // Skip ASG's own internal API calls
+      if (pathname.startsWith('/api/v1/posa') || pathname.startsWith('/api/v1/telemetry') ||
+          pathname.startsWith('/api/v1/config') || pathname.startsWith('/api/v1/ade') ||
+          pathname.startsWith('/sdk/')) return;
+
+      const existing = this.discoveredRoutes.get(routeKey);
+      const observationCount = (existing ? existing.observationCount : 0) + 1;
+
+      // Infer route collection from pathname (e.g. /api/products → products)
+      const pathParts = pathname.replace(/^\/api\/v?\d*\//, '').split('/');
+      const collection = pathParts[0] || 'records';
+      const hasIdSegment = pathParts.length > 1 && /^[a-zA-Z0-9_-]+$/.test(pathParts[1]);
+
+      // Infer operation semantic from method + path structure
+      let semantic = 'STATE';
+      if (['POST', 'PUT', 'PATCH'].includes(method)) semantic = 'STATE';
+      if (pathname.includes('/order') || pathname.includes('/checkout') || pathname.includes('/submit')) semantic = 'COMMAND';
+      if (pathname.includes('/payment') || pathname.includes('/pay') || pathname.includes('/charge')) semantic = 'EVENT';
+
+      // Confidence scoring model
+      let confidence = Math.min(95, 50 + (observationCount * 10));
+      if (status >= 200 && status < 300) confidence = Math.min(97, confidence + 15);
+      if (requestBody && typeof requestBody === 'object') confidence = Math.min(97, confidence + 5);
+      if (pathname.includes('payment') || pathname.includes('auth') || pathname.includes('otp') ||
+          pathname.includes('token') || pathname.includes('webhook')) confidence = Math.max(confidence - 40, 10);
+
+      // Classify offline mode based on confidence + semantic
+      let offlineMode;
+      if (method === 'GET') {
+        offlineMode = 'LOCAL_SAFE';
+      } else if (confidence >= 80 && semantic === 'STATE') {
+        offlineMode = 'LOCAL_SAFE';
+      } else if (confidence >= 50) {
+        offlineMode = 'DEFERRED';
+      } else {
+        offlineMode = 'ONLINE_REQUIRED';
+      }
+
+      // Determine auth type from captured headers
+      let authType = 'none';
+      if (capturedHeaders['Authorization'] || capturedHeaders['authorization']) authType = 'bearer_token';
+      else if (capturedHeaders['X-API-Key'] || capturedHeaders['x-api-key']) authType = 'api_key';
+      else authType = 'session_cookie'; // Default: relies on browser cookie
+
+      const entry = {
+        routeKey,
+        method,
+        pathname,
+        normalizedPath: this._normalizePathname(pathname),
+        origin: effectiveOrigin,
+        resolvedHref: resolvedHref || (effectiveOrigin + pathname),
+        collection,
+        hasIdSegment,
+        semantic,
+        offlineMode,
+        confidence,
+        observationCount,
+        requestBodySchema: requestBody ? this._inferSchema(requestBody) : null,
+        responseBodySchema: responseBody ? this._inferSchema(responseBody) : null,
+        authType,
+        capturedHeaderKeys: Object.keys(capturedHeaders).filter(k => !['Authorization','Cookie','X-API-Key'].includes(k)),
+        source: 'runtime_observation',
+        lastObservedAt: new Date().toISOString(),
+        // Integration descriptor for Sync Router replay
+        integration: {
+          level: effectiveOrigin !== window.location.origin ? 3 : 2,
+          method,
+          urlPattern: effectiveOrigin + this._normalizePathname(pathname),
+          authType,
+          isThirdParty: effectiveOrigin !== window.location.origin
+        }
+      };
+
+      this.discoveredRoutes.set(routeKey, entry);
+      this._saveRouteToManifestDB(entry);
+
+      // Auto-register into runtime route classification
+      if (offlineMode !== 'ONLINE_REQUIRED' || !this.registeredRoutes.has(routeKey)) {
+        if (!this.registeredRoutes.has(routeKey)) {
+          this.registerRoute({
+            method,
+            path: entry.normalizedPath,
+            mode: offlineMode,
+            collection,
+            _source: 'ade_auto'
+          });
+        }
+      }
+
+      console.log(`[ADE] Observed: [${method}] ${effectiveOrigin}${pathname} → ${offlineMode} (confidence: ${confidence}%, obs: ${observationCount})`);
+    }
+
+    _normalizePathname(pathname) {
+      // Normalize dynamic segments: /api/products/123 → /api/products/:id
+      return pathname.replace(/\/[0-9a-f]{8,}/gi, '/:id').replace(/\/\d+(?=\/|$)/g, '/:id');
+    }
+
+    _inferSchema(obj) {
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+      const schema = {};
+      for (const [key, value] of Object.entries(obj)) {
+        if (typeof value === 'string') schema[key] = 'string';
+        else if (typeof value === 'number') schema[key] = 'number';
+        else if (typeof value === 'boolean') schema[key] = 'boolean';
+        else if (Array.isArray(value)) schema[key] = 'array';
+        else if (typeof value === 'object' && value !== null) schema[key] = 'object';
+        else schema[key] = 'unknown';
+      }
+      return schema;
+    }
+
+    async _runBootstrapDiscovery() {
+      // Source 2: Probe for OpenAPI specification
+      await this._probeOpenAPI();
+
+      // Source 3: Scan downloaded JS bundles for URL patterns
+      await this._scanJSBundlesForAPIs();
+
+      // Load any previously saved manifest entries
+      await this.loadManifestFromIndexedDB();
+
+      const total = this.discoveredRoutes.size;
+      console.log(`[ADE] Bootstrap Discovery complete. ${total} routes discovered.`);
+      if (total > 0) {
+        this.showToast('📋 API Discovery Complete', `${total} routes discovered & classified. Offline readiness snapshot ready.`, 'success');
+      }
+
+      // Sync discovered manifest back to server for cross-session persistence
+      await this._syncManifestToServer();
+    }
+
+    async _syncManifestToServer() {
+      if (!this.isOnline || this.discoveredRoutes.size === 0) return;
+      try {
+        const manifest = this.getManifest();
+        await fetch(`${this.serverUrl}/api/v1/ade/manifest`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ appId: this.appId, manifest })
+        });
+        console.log(`[ADE] Manifest synced to server: ${Object.keys(manifest).length} routes.`);
+      } catch (e) {
+        // Non-critical — manifest is still stored in local IndexedDB
+      }
+    }
+
+
+    async _probeOpenAPI() {
+      const candidates = ['/openapi.json', '/swagger.json', '/api-docs', '/api-docs.json', '/api/openapi.json'];
+      for (const path of candidates) {
+        try {
+          const res = await fetch(path, { signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined });
+          if (!res.ok) continue;
+          const spec = await res.json();
+
+          if (spec.paths) {
+            // OpenAPI 3.x or Swagger 2.x
+            for (const [apiPath, methods] of Object.entries(spec.paths)) {
+              for (const [httpMethod, opDef] of Object.entries(methods)) {
+                if (!['get','post','put','patch','delete'].includes(httpMethod)) continue;
+                const method = httpMethod.toUpperCase();
+                const routeKey = `${method}:${apiPath}`;
+                const collection = apiPath.replace(/^\/api\/v?\d*\//, '').split('/')[0] || 'records';
+
+                let offlineMode = 'LOCAL_SAFE';
+                if (['payment','pay','charge','auth','otp','webhook','notify'].some(kw => apiPath.includes(kw))) {
+                  offlineMode = 'ONLINE_REQUIRED';
+                } else if (method !== 'GET') {
+                  offlineMode = 'DEFERRED';
+                }
+
+                const entry = {
+                  routeKey,
+                  method,
+                  pathname: apiPath,
+                  normalizedPath: apiPath,
+                  collection,
+                  hasIdSegment: apiPath.includes('{') || apiPath.includes(':'),
+                  semantic: method === 'GET' ? 'QUERY' : 'STATE',
+                  offlineMode,
+                  confidence: 100,
+                  observationCount: 0,
+                  requestBodySchema: null,
+                  responseBodySchema: null,
+                  source: 'openapi_spec',
+                  summary: opDef.summary || '',
+                  lastObservedAt: new Date().toISOString()
+                };
+
+                if (!this.discoveredRoutes.has(routeKey)) {
+                  this.discoveredRoutes.set(routeKey, entry);
+                  this._saveRouteToManifestDB(entry);
+                  this.registerRoute({ method, path: apiPath, mode: offlineMode, collection, _source: 'openapi' });
+                  console.log(`[ADE] OpenAPI: [${method}] ${apiPath} → ${offlineMode} (confidence: 100%)`);
+                }
+              }
+            }
+            console.log(`[ADE] OpenAPI spec loaded from ${path}`);
+            return; // Stop after first successful probe
+          }
+        } catch (e) {
+          // Path not available — continue to next candidate
+        }
+      }
+    }
+
+    async _scanJSBundlesForAPIs() {
+      const scripts = Array.from(document.querySelectorAll('script[src]'));
+      const sameOriginScripts = scripts.filter(s => {
+        try {
+          return new URL(s.src, window.location.origin).origin === window.location.origin;
+        } catch (e) { return false; }
+      });
+
+      // Limit to first 5 scripts to avoid excessive scanning
+      const toScan = sameOriginScripts.slice(0, 5);
+
+      for (const script of toScan) {
+        try {
+          const res = await fetch(script.src);
+          if (!res.ok) continue;
+          const text = await res.text();
+
+          // Regex patterns to find API URL strings in JS bundles
+          const patterns = [
+            /fetch\s*\(\s*[`'"](\/api\/[^`'"]+)[`'"]/g,
+            /axios\s*\.\s*(?:get|post|put|patch|delete)\s*\(\s*[`'"](\/api\/[^`'"]+)[`'"]/g,
+            /[`'"](\/api\/v?\d*\/[a-zA-Z][a-zA-Z0-9/_-]*)[`'"]/g
+          ];
+
+          const found = new Set();
+          for (const pattern of patterns) {
+            let match;
+            while ((match = pattern.exec(text)) !== null) {
+              found.add(match[1]);
+            }
+          }
+
+          for (const apiPath of found) {
+            // Default static scan: can't know method, use GET as placeholder
+            const routeKey = `STATIC:${apiPath}`;
+            if (!this.discoveredRoutes.has(`GET:${apiPath}`) && !this.discoveredRoutes.has(`POST:${apiPath}`)) {
+              const collection = apiPath.replace(/^\/api\/v?\d*\//, '').split('/')[0] || 'records';
+              const entry = {
+                routeKey,
+                method: 'UNKNOWN',
+                pathname: apiPath,
+                normalizedPath: this._normalizePathname(apiPath),
+                collection,
+                offlineMode: 'DEFERRED',
+                confidence: 30,
+                observationCount: 0,
+                source: 'js_bundle_scan',
+                lastObservedAt: new Date().toISOString()
+              };
+              this.discoveredRoutes.set(routeKey, entry);
+              this._saveRouteToManifestDB(entry);
+              console.log(`[ADE] Bundle scan found: ${apiPath} (confidence: 30%, method unknown)`);
+            }
+          }
+        } catch (e) {
+          // Script fetch failed — skip
+        }
+      }
+    }
+
+    async _saveRouteToManifestDB(entry) {
+      if (!this.db) return;
+      try {
+        const tx = this.db.transaction(['api_manifest'], 'readwrite');
+        const store = tx.objectStore('api_manifest');
+        store.put(entry);
+      } catch (e) {}
+    }
+
+    async loadManifestFromIndexedDB() {
+      if (!this.db) return;
+      try {
+        const tx = this.db.transaction(['api_manifest'], 'readonly');
+        const store = tx.objectStore('api_manifest');
+        const req = store.getAll();
+        req.onsuccess = () => {
+          const entries = req.result || [];
+          for (const entry of entries) {
+            if (!this.discoveredRoutes.has(entry.routeKey)) {
+              this.discoveredRoutes.set(entry.routeKey, entry);
+            }
+            // Re-register into runtime route classification on load
+            if (entry.method && entry.method !== 'UNKNOWN' && !this.registeredRoutes.has(entry.routeKey)) {
+              this.registerRoute({
+                method: entry.method,
+                path: entry.normalizedPath || entry.pathname,
+                mode: entry.offlineMode || 'DEFERRED',
+                collection: entry.collection || 'records',
+                _source: 'manifest_restore'
+              });
+            }
+          }
+          console.log(`[ADE] Manifest restored: ${entries.length} routes loaded from IndexedDB.`);
+        };
+      } catch (e) {}
+    }
+
+    /** Returns the full discovered API manifest (for developer inspection) */
+    getManifest() {
+      const manifest = {};
+      for (const [key, entry] of this.discoveredRoutes.entries()) {
+        manifest[key] = {
+          method: entry.method,
+          path: entry.pathname,
+          offlineMode: entry.offlineMode,
+          confidence: entry.confidence,
+          observationCount: entry.observationCount,
+          collection: entry.collection,
+          semantic: entry.semantic,
+          source: entry.source,
+          requestBodySchema: entry.requestBodySchema,
+          responseBodySchema: entry.responseBodySchema
+        };
+      }
+      return manifest;
+    }
+
+
 
     notifyStatusChange() {
       this.statusListeners.forEach(fn => fn(this.isOnline));
@@ -915,8 +1443,27 @@
       };
     }
 
+    /** Phase B: Infer human-readable business intent from action + collection */
+    _inferIntent(action, collection) {
+      const entity = (collection || 'RECORD')
+        .replace(/[_-]/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase())
+        .replace(/\s+/, '_')
+        .toUpperCase();
+
+      const actionMap = {
+        'CREATE': `CREATE_${entity}`,
+        'UPDATE': `UPDATE_${entity}`,
+        'DELETE': `DELETE_${entity}`,
+        'MUTATION': `MODIFY_${entity}`,
+        'QUERY': `READ_${entity}`
+      };
+
+      return actionMap[action] || `${action}_${entity}`;
+    }
+
     /** Phase 1 & 2: Local Operation First & Metadata Generation */
-    async posaQueueOperation({ collection, action, payload, priority = 'MEDIUM', dependencyId = null, recordId = null, nonCollapsible = false, type = 'MUTATION', authToken = null, userContext = null }) {
+    async posaQueueOperation({ collection, action, payload, priority = 'MEDIUM', dependencyId = null, recordId = null, nonCollapsible = false, type = 'MUTATION', authToken = null, userContext = null, integration = null }) {
       if (!this.db) {
         console.warn('[POSA Engine] Database not initialized yet.');
         return null;
@@ -953,7 +1500,27 @@
         status: 'PENDING',
         hash,
         signature: this.appSecret ? 'hmac_' + hash : null,
-        lastRetryTimestamp: null
+        lastRetryTimestamp: null,
+
+        // ── Phase B: Business Intent Journal ─────────────────────────────────
+        intent: this._inferIntent(action.toUpperCase(), collection),
+        entity: collection,
+        entityId: recId,
+        replayPlan: {
+          page: typeof window !== 'undefined' ? window.location.pathname : null,
+          action: action.toUpperCase(),
+          collection,
+          recordId: recId,
+          fields: { ...payload },
+          capturedAt: timestamp,
+          replayMethod: 'API_DIRECT'
+        },
+        // ── Phase C: Sync Router Integration Block ────────────────────────────
+        // Records exactly WHERE to replay this op when internet returns.
+        // If null → routes to ASG server (/api/v1/posa/sync).
+        // If set → routes to the original website's backend endpoint.
+        integration: integration || this._resolveIntegrationForOp(action.toUpperCase(), collection, payload)
+        // ─────────────────────────────────────────────────────────────────────
       };
 
       // 1. Local Database Write First (Instant User Experience)
@@ -1208,7 +1775,7 @@
       });
     }
 
-    /** Core POSA Sync Execution Loop */
+    /** Core POSA Sync Execution Loop — upgraded with Sync Router & Reconciliation */
     async processPOSAQueue() {
       if (!this.db || this.isSyncing) return;
 
@@ -1224,6 +1791,9 @@
       if (!rawQueue || rawQueue.length === 0) return;
 
       this.isSyncing = true;
+      let totalSynced = 0;
+      let savingsPct = 0;
+
       try {
         console.log(`[POSA Engine] Starting POSA synchronization cycle for ${rawQueue.length} items...`);
 
@@ -1231,8 +1801,7 @@
         const collapsedQueue = this.collapsePOSAQueue(rawQueue);
         const originalCount = rawQueue.length;
         const collapsedCount = collapsedQueue.length;
-        const savingsPct = Math.round(((originalCount - collapsedCount) / originalCount) * 100);
-
+        savingsPct = Math.round(((originalCount - collapsedCount) / originalCount) * 100);
         console.log(`[POSA Optimization] Collapsed ${originalCount} ops to ${collapsedCount} ops (${savingsPct}% bandwidth saved).`);
 
         // Phase 3: DAG Topological Sorting
@@ -1240,37 +1809,45 @@
 
         // Filter out items in exponential backoff delay
         const now = Date.now();
-        const itemsToSync = sortedQueue.filter(item => {
-          if (!item.lastRetryTimestamp || item.retryCount === 0) return true;
-          const waitSecs = this.getPOSABackoffInterval(item.retryCount);
-          const elapsedSecs = (now - new Date(item.lastRetryTimestamp).getTime()) / 1000;
-          return elapsedSecs >= waitSecs;
-        });
+        const itemsToSync = sortedQueue
+          .map(item => this._rewriteTemporaryIdsInOperation(item))
+          .filter(item => {
+            if (!item.lastRetryTimestamp || item.retryCount === 0) return true;
+            const waitSecs = this.getPOSABackoffInterval(item.retryCount);
+            const elapsedSecs = (now - new Date(item.lastRetryTimestamp).getTime()) / 1000;
+            return elapsedSecs >= waitSecs;
+          });
 
         if (itemsToSync.length === 0) {
-          console.log('[POSA Engine] Items in queue are currently in exponential backoff wait state.');
+          console.log('[POSA Engine] All queued items are in exponential backoff wait state.');
           return;
         }
 
-        // Chunk large sync queues into batches of 100 operations to prevent payload limits
+        // ── SYNC ROUTER: split ops into ASG-server vs. original-endpoint buckets ──
+        const { asgOps, replayOps } = this._buildSyncRouter(itemsToSync);
+
+        // ── PATH A: ASG-integrated ops → batch POST to /api/v1/posa/sync ──
         const BATCH_SIZE = 100;
-        let totalSynced = 0;
+        for (let i = 0; i < asgOps.length; i += BATCH_SIZE) {
+          const chunk = asgOps.slice(i, i + BATCH_SIZE);
 
-        for (let i = 0; i < itemsToSync.length; i += BATCH_SIZE) {
-          const chunk = itemsToSync.slice(i, i + BATCH_SIZE);
-
-          const response = await fetch(`${this.serverUrl}/api/v1/posa/sync`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              appId: this.appId,
-              deviceId: this.getDeviceId(),
-              conflictStrategy: this.conflictStrategy || 'LAST_WRITE_WINS',
-              operations: chunk
-            })
-          });
-
-          const syncResult = await response.json();
+          let response, syncResult;
+          try {
+            response = await fetch(`${this.serverUrl}/api/v1/posa/sync`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                appId: this.appId,
+                deviceId: this.getDeviceId(),
+                conflictStrategy: this.conflictStrategy || 'LAST_WRITE_WINS',
+                operations: chunk
+              })
+            });
+            syncResult = await response.json();
+          } catch (netErr) {
+            console.warn('[POSA Engine] ASG server unreachable, will retry:', netErr.message);
+            continue;
+          }
 
           if (syncResult.success) {
             const processedIds = new Set(syncResult.syncedOperationIds || []);
@@ -1280,48 +1857,42 @@
             const posaStore = tx.objectStore('posa_queue');
             const dlqStore = tx.objectStore('posa_dlq');
 
-            // 1. Delete successfully synced operations from queue
             for (const opId of processedIds) {
               posaStore.delete(opId);
             }
             totalSynced += processedIds.size;
 
-            // 2. Process Dead-Letter Queue (DLQ) operations & block descendant operations
+            // Reconcile successfully synced ASG ops
+            for (const op of chunk) {
+              if (processedIds.has(op.operationId)) {
+                await this._reconcileAfterSync(op, syncResult);
+              }
+            }
+
+            // Move dead-letter ops + their dependents to DLQ
             if (deadLetterList.length > 0) {
               const deadLetterMap = new Map(deadLetterList.map(dl => [dl.operationId, dl]));
               const deadLetterOpIds = new Set(deadLetterList.map(dl => dl.operationId));
 
-              // Read remaining queue to find dependent operations
-              const allQueueOps = chunk;
-
-              for (const item of allQueueOps) {
+              for (const item of chunk) {
                 if (deadLetterOpIds.has(item.operationId)) {
                   const dlInfo = deadLetterMap.get(item.operationId);
-                  const dlRecord = {
-                    ...item,
-                    status: 'DEAD_LETTER',
-                    reason: dlInfo.reason || 'Server validation failed',
-                    movedToDlqAt: new Date().toISOString()
-                  };
+                  const dlRecord = { ...item, status: 'DEAD_LETTER', reason: dlInfo.reason || 'Server validation failed', movedToDlqAt: new Date().toISOString() };
                   dlqStore.put(dlRecord);
                   posaStore.delete(item.operationId);
-                  console.warn(`[POSA DLQ Engine] Operation '${item.operationId}' moved to Dead-Letter Queue: ${dlRecord.reason}`);
+                  await this._revertProvisionalState(item);
+                  console.warn(`[POSA DLQ] Op '${item.operationId}' dead-lettered: ${dlRecord.reason}`);
                 } else if (item.dependencyId && deadLetterOpIds.has(item.dependencyId)) {
-                  const depRecord = {
-                    ...item,
-                    status: 'DEPENDENCY_FAILED',
-                    reason: `Parent operation '${item.dependencyId}' failed in DLQ`,
-                    movedToDlqAt: new Date().toISOString()
-                  };
+                  const depRecord = { ...item, status: 'DEPENDENCY_FAILED', reason: `Parent '${item.dependencyId}' DLQ'd`, movedToDlqAt: new Date().toISOString() };
                   dlqStore.put(depRecord);
                   posaStore.delete(item.operationId);
-                  console.warn(`[POSA DLQ Engine] Descendant op '${item.operationId}' blocked due to parent DLQ failure.`);
+                  console.warn(`[POSA DLQ] Descendant op '${item.operationId}' blocked by parent DLQ failure.`);
                 }
               }
               this.showToast('⚠️ DLQ Action Required', `${deadLetterList.length} operation(s) moved to Dead-Letter Queue.`, 'warning');
             }
           } else {
-            console.warn('[POSA Engine] Sync chunk failed, applying exponential backoff:', syncResult.error);
+            console.warn('[POSA Engine] ASG sync chunk failed, applying exponential backoff:', syncResult.error);
             const tx = this.db.transaction(['posa_queue'], 'readwrite');
             const store = tx.objectStore('posa_queue');
             for (const item of chunk) {
@@ -1332,10 +1903,46 @@
           }
         }
 
+        // ── PATH B: 3rd-party ops → replay individually to original endpoints ──
+        for (const op of replayOps) {
+          const result = await this._replayToOriginalEndpoint(op);
+
+          if (result.success) {
+            // Remove from POSA queue
+            const tx = this.db.transaction(['posa_queue'], 'readwrite');
+            tx.objectStore('posa_queue').delete(op.operationId);
+            totalSynced++;
+            console.log(`[Sync Router] ✅ Original endpoint replay complete for '${op.operationId}'.`);
+          } else if (result.reason === 'REJECTED') {
+            // Server definitively rejected → dead-letter + revert
+            const tx = this.db.transaction(['posa_queue', 'posa_dlq'], 'readwrite');
+            const dlRecord = { ...op, status: 'DEAD_LETTER', reason: `Original backend rejected: HTTP ${result.status}`, movedToDlqAt: new Date().toISOString() };
+            tx.objectStore('posa_dlq').put(dlRecord);
+            tx.objectStore('posa_queue').delete(op.operationId);
+            await this._revertProvisionalState(op);
+            this.sendAlert('ORIGINAL_BACKEND_REJECTION', `Op '${op.operationId}' rejected by original backend (HTTP ${result.status})`, 'warning');
+          } else if (result.reason === 'AUTH_EXPIRED') {
+            // Session expired — keep in queue, notify user
+            this.showToast('🔒 Session Expired', 'Your session may have expired. Please log in to complete sync.', 'warning');
+            const tx = this.db.transaction(['posa_queue'], 'readwrite');
+            const updatedOp = { ...op, retryCount: (op.retryCount || 0) + 1, lastRetryTimestamp: new Date().toISOString(), status: 'AUTH_EXPIRED' };
+            tx.objectStore('posa_queue').put(updatedOp);
+          } else if (result.fallback) {
+            // No integration info — route through ASG server as fallback
+            console.log(`[Sync Router] No integration map for op '${op.operationId}', routing through ASG server.`);
+            asgOps.push(op); // Will be picked up next cycle
+          } else {
+            // Network error — exponential backoff
+            const tx = this.db.transaction(['posa_queue'], 'readwrite');
+            const updatedOp = { ...op, retryCount: (op.retryCount || 0) + 1, lastRetryTimestamp: new Date().toISOString() };
+            tx.objectStore('posa_queue').put(updatedOp);
+          }
+        }
+
         if (totalSynced > 0) {
-          console.log(`[POSA Engine] ✅ Successfully synchronized ${totalSynced} DAG operations across batch chunks!`);
-          this.showToast('✅ POSA Sync Complete', `Successfully synced ${totalSynced} DAG operations (${savingsPct}% payload saved).`, 'success');
-          this.sendTelemetry('POSA_SYNC_SUCCESS', { syncedOps: totalSynced, savingsPct });
+          console.log(`[POSA Engine] ✅ Synchronized ${totalSynced} DAG operations (${asgOps.length > 0 ? 'ASG server' : ''}${replayOps.length > 0 ? ' + original endpoints' : ''}).`);
+          this.showToast('✅ POSA Sync Complete', `Synced ${totalSynced} ops (${savingsPct}% payload saved). Local DB reconciled.`, 'success');
+          this.sendTelemetry('POSA_SYNC_SUCCESS', { syncedOps: totalSynced, savingsPct, asgOps: asgOps.length, replayOps: replayOps.length });
           this.notifyQueueChange();
         }
       } catch (err) {
@@ -1348,6 +1955,315 @@
     triggerASESync() {
       if (this.isOnline) {
         setTimeout(() => this.processPOSAQueue(), 500);
+      }
+    }
+
+    // =====================================================================
+    // PHASE C: SYNC ROUTER & RECONCILIATION ENGINE
+    // Routes each POSA operation to the correct destination on reconnect:
+    //   - ASG-integrated apps → POST /api/v1/posa/sync (your server)
+    //   - 3rd-party websites  → replay to original endpoint via Integration Map
+    // After replay: fetches authoritative state and reconciles local IndexedDB.
+    // =====================================================================
+
+    /**
+     * Resolves the best Integration Map entry for a given operation.
+     * Checks ADE discovered routes for an exact or pattern match.
+     */
+    _resolveIntegrationForOp(action, collection, payload) {
+      const methodMap = { CREATE: 'POST', UPDATE: 'PATCH', DELETE: 'DELETE', MUTATION: 'POST', QUERY: 'GET' };
+      const method = methodMap[action] || 'POST';
+
+      for (const [routeKey, entry] of this.discoveredRoutes.entries()) {
+        if (entry.method === method && (entry.collection === collection || entry.pathname.includes(collection))) {
+          return {
+            level: entry.integration ? entry.integration.level : 2,
+            method: entry.method,
+            urlPattern: entry.integration ? entry.integration.urlPattern : (window.location.origin + entry.normalizedPath),
+            authType: entry.authType || 'session_cookie',
+            isThirdParty: entry.integration ? entry.integration.isThirdParty : false,
+            resolvedHref: entry.resolvedHref || null,
+            source: entry.source || 'ade_manifest'
+          };
+        }
+      }
+      return null;
+    }
+
+    _recordTemporaryIdMapping(tempId, realId) {
+      if (!tempId || !realId || String(tempId) === String(realId)) return;
+      this.tempIdMap.set(String(tempId), realId);
+      console.log(`[Temporary ID Engine] Registered ID mapping: '${tempId}' → '${realId}'`);
+    }
+
+    _rewriteValueWithTempMap(val) {
+      if (this.tempIdMap.size === 0 || val === null || val === undefined) return val;
+      if (typeof val === 'string' || typeof val === 'number') {
+        const str = String(val);
+        if (this.tempIdMap.has(str)) return this.tempIdMap.get(str);
+        let result = str;
+        for (const [tempId, realId] of this.tempIdMap.entries()) {
+          if (result.includes(tempId)) {
+            result = result.replaceAll(tempId, String(realId));
+          }
+        }
+        return result;
+      }
+      if (Array.isArray(val)) {
+        return val.map(item => this._rewriteValueWithTempMap(item));
+      }
+      if (typeof val === 'object') {
+        const rewritten = {};
+        for (const [k, v] of Object.entries(val)) {
+          const newKey = this._rewriteValueWithTempMap(k);
+          rewritten[newKey] = this._rewriteValueWithTempMap(v);
+        }
+        return rewritten;
+      }
+      return val;
+    }
+
+    _rewriteTemporaryIdsInOperation(op) {
+      if (this.tempIdMap.size === 0 || !op) return op;
+
+      const cloned = JSON.parse(JSON.stringify(op));
+      cloned.recordId = this._rewriteValueWithTempMap(cloned.recordId);
+      if (cloned.dependencyId) {
+        cloned.dependencyId = this._rewriteValueWithTempMap(cloned.dependencyId);
+      }
+      if (cloned.payload) {
+        cloned.payload = this._rewriteValueWithTempMap(cloned.payload);
+      }
+      if (cloned.integration && cloned.integration.urlPattern) {
+        cloned.integration.urlPattern = this._rewriteValueWithTempMap(cloned.integration.urlPattern);
+      }
+      return cloned;
+    }
+
+    /** Re-resolves integration dynamically at replay time if missing or low confidence */
+    _resolveIntegrationAtReplayTime(op) {
+      if (op.integration && op.integration.urlPattern) return op.integration;
+      const fresh = this._resolveIntegrationForOp(op.action, op.collection, op.payload);
+      if (fresh) {
+        console.log(`[Sync Router] Dynamically resolved integration at replay time for op '${op.operationId}':`, fresh.urlPattern);
+      }
+      return fresh;
+    }
+
+    /**
+     * Builds the Sync Router decision for a batch of POSA ops.
+     * Returns two buckets:
+     *   asgOps   → send to /api/v1/posa/sync (your server)
+     *   replayOps → replay individually to original backend endpoints
+     */
+    _buildSyncRouter(ops) {
+      const asgOps = [];
+      const replayOps = [];
+
+      for (const op of ops) {
+        const intg = op.integration;
+
+        if (!intg || !intg.isThirdParty) {
+          // ASG-integrated or no integration info → safe to batch through your POSA server
+          asgOps.push(op);
+        } else {
+          // Has a 3rd-party integration target → needs individual replay
+          replayOps.push(op);
+        }
+      }
+
+      console.log(`[Sync Router] Routing: ${asgOps.length} ops → ASG server, ${replayOps.length} ops → original endpoints`);
+      return { asgOps, replayOps };
+    }
+
+    /**
+     * Resolves a URL pattern to an actual URL by substituting the recordId.
+     * /api/products/:id + recordId 71 → /api/products/71
+     */
+    _resolveUrl(urlPattern, op) {
+      const recordId = op.recordId || op.payload?.id || '';
+      return urlPattern
+        .replace(/:id/g, recordId)
+        .replace(/\{id\}/g, recordId)
+        .replace(/\{[a-zA-Z0-9_]+\}/g, recordId);
+    }
+
+    /**
+     * Replays a single POSA operation to the original website's backend endpoint.
+     * Uses the integration block captured at queue-time by the ADE.
+     */
+    async _replayToOriginalEndpoint(op) {
+      const intg = this._resolveIntegrationAtReplayTime(op);
+      if (!intg || !intg.urlPattern) {
+        console.warn(`[Sync Router] No integration URL for op '${op.operationId}'. Falling back to ASG server.`);
+        return { success: false, fallback: true };
+      }
+
+      const resolvedUrl = this._resolveUrl(intg.urlPattern, op);
+      const method = intg.method || 'POST';
+
+      // Build request options — use session cookie by default (browser sends automatically)
+      const fetchOptions = {
+        method,
+        credentials: 'include', // Send cookies (session auth for 3rd-party sites)
+        headers: { 'Content-Type': 'application/json' }
+      };
+
+      if (method !== 'GET' && method !== 'DELETE') {
+        fetchOptions.body = JSON.stringify(op.payload);
+      } else if (method === 'DELETE') {
+        fetchOptions.body = JSON.stringify({ id: op.recordId });
+      }
+
+      console.log(`[Sync Router] Replaying [${method}] ${resolvedUrl} (op: ${op.operationId})`);
+
+      // Add to self-observation loop guard
+      this._replayInFlight.add(resolvedUrl);
+
+      try {
+        const response = await fetch(resolvedUrl, fetchOptions);
+        const responseText = await response.text();
+        let responseData = null;
+        try { responseData = JSON.parse(responseText); } catch (e) {}
+
+        if (response.ok || response.status < 400) {
+          console.log(`[Sync Router] ✅ Replay accepted by original backend: ${resolvedUrl} (HTTP ${response.status})`);
+          await this._reconcileAfterSync(op, responseData);
+          return { success: true, status: response.status, data: responseData };
+        } else if (response.status === 401 || response.status === 403) {
+          console.warn(`[Sync Router] Auth expired for replay to ${resolvedUrl}. Session may have expired offline.`);
+          return { success: false, status: response.status, reason: 'AUTH_EXPIRED', data: responseData };
+        } else if (response.status === 409) {
+          console.warn(`[Sync Router] Conflict on replay to ${resolvedUrl}. Server has newer state.`);
+          await this._reconcileAfterSync(op, responseData);
+          return { success: false, status: response.status, reason: 'CONFLICT', data: responseData };
+        } else {
+          console.warn(`[Sync Router] Replay rejected by original backend: HTTP ${response.status}`);
+          return { success: false, status: response.status, reason: 'REJECTED', data: responseData };
+        }
+      } catch (networkErr) {
+        console.warn(`[Sync Router] Network error during replay to ${resolvedUrl}:`, networkErr.message);
+        return { success: false, reason: 'NETWORK_ERROR' };
+      } finally {
+        this._replayInFlight.delete(resolvedUrl);
+      }
+    }
+
+    /**
+     * Reconciliation Engine: After a successful (or conflicting) replay,
+     * fetch the authoritative server state and replace the provisional local record.
+     *
+     * CAPTURE → PERSIST → REPRODUCE → VERIFY → RECONCILE (this step)
+     */
+    async _reconcileAfterSync(op, serverResponseData) {
+      try {
+        const intg = this._resolveIntegrationAtReplayTime(op);
+        let authoritativeRecord = null;
+        let reconciliationSource = 'none';
+
+        // Attempt to fetch the authoritative record from server
+        if (intg && intg.urlPattern) {
+          const getUrl = this._resolveUrl(intg.urlPattern.replace(/\/$/, ''), op);
+
+          try {
+            const getRes = await fetch(getUrl, { method: 'GET', credentials: 'include' });
+            if (getRes.ok) {
+              const freshData = await getRes.json();
+              authoritativeRecord = freshData?.data || freshData?.record || freshData?.result || freshData;
+              reconciliationSource = 'authoritative_get';
+            } else {
+              throw new Error(`HTTP ${getRes.status}`);
+            }
+          } catch (e) {
+            // Can't fetch GET state — use server response data as fallback
+            console.log(`[Reconciliation] GET endpoint unavailable (${e.message}) — using sync response as authoritative state for op '${op.operationId}'.`);
+            authoritativeRecord = serverResponseData?.data || serverResponseData?.record || serverResponseData;
+            reconciliationSource = 'sync_response';
+          }
+        } else {
+          authoritativeRecord = serverResponseData;
+          reconciliationSource = 'asg_server_response';
+        }
+
+        // Replace provisional local IndexedDB record with authoritative server truth
+        if (authoritativeRecord && this.dbApi && op.collection && op.recordId) {
+          const cleanRecord = typeof authoritativeRecord === 'object' ? authoritativeRecord : null;
+          if (cleanRecord && Object.keys(cleanRecord).length > 0) {
+            // Check for real server ID to record temporary ID mapping
+            const realServerId = cleanRecord.id || cleanRecord.recordId || cleanRecord._id || cleanRecord.customerId || cleanRecord.orderId;
+            if (realServerId && op.recordId && String(realServerId) !== String(op.recordId)) {
+              this._recordTemporaryIdMapping(op.recordId, realServerId);
+            }
+
+            await this.dbApi.insert(op.collection, {
+              ...cleanRecord,
+              id: realServerId || op.recordId,
+              _reconciledAt: new Date().toISOString(),
+              _reconciliationSource: reconciliationSource,
+              _authoritative: true
+            });
+            console.log(`[Reconciliation] ✅ Local record '${op.collection}:${op.recordId}' reconciled via '${reconciliationSource}'.`);
+          }
+        }
+
+        // Write reconciliation log entry
+        if (this.db) {
+          const logEntry = {
+            operationId: op.operationId,
+            collection: op.collection,
+            recordId: op.recordId,
+            status: 'RECONCILED',
+            serverData: authoritativeRecord,
+            reconciledAt: new Date().toISOString()
+          };
+          const tx = this.db.transaction(['posa_reconciliation_log'], 'readwrite');
+          tx.objectStore('posa_reconciliation_log').put(logEntry);
+        }
+
+        // Emit event so UI can re-render with fresh data
+        window.dispatchEvent(new CustomEvent('asg:reconciled', {
+          detail: { operationId: op.operationId, collection: op.collection, recordId: op.recordId, authoritativeRecord }
+        }));
+
+      } catch (err) {
+        console.warn('[Reconciliation] Failed to reconcile local state:', err.message);
+      }
+    }
+
+    /**
+     * Reverts a provisional local record when the server definitively rejects an operation.
+     * Called for dead-letter ops so the UI doesn't show stale data.
+     */
+    async _revertProvisionalState(op) {
+      try {
+        if (!this.dbApi || !op.collection || !op.recordId) return;
+
+        if (op.action === 'CREATE') {
+          // A create that was rejected — delete the provisional record
+          await this.dbApi.delete(op.recordId);
+          console.log(`[Reconciliation] ↩️ Reverted provisional CREATE for '${op.collection}:${op.recordId}'.`);
+        } else if (op.action === 'UPDATE' && op.integration) {
+          // For updates: try to fetch server truth to restore
+          const getUrl = this._resolveUrl(op.integration.urlPattern, op);
+          try {
+            const res = await fetch(getUrl, { method: 'GET', credentials: 'include' });
+            if (res.ok) {
+              const fresh = await res.json();
+              const record = fresh?.data || fresh?.record || fresh;
+              if (record && typeof record === 'object') {
+                await this.dbApi.insert(op.collection, { ...record, id: op.recordId });
+                console.log(`[Reconciliation] ↩️ Restored server state for '${op.collection}:${op.recordId}' after rejection.`);
+              }
+            }
+          } catch (e) {}
+        }
+
+        // Log the revert
+        window.dispatchEvent(new CustomEvent('asg:reverted', {
+          detail: { operationId: op.operationId, collection: op.collection, recordId: op.recordId, reason: 'SERVER_REJECTED' }
+        }));
+      } catch (err) {
+        console.warn('[Reconciliation] Failed to revert provisional state:', err.message);
       }
     }
 
