@@ -1813,6 +1813,13 @@
         return;
       }
 
+      // Reconnection Authentication Gate: Hold replay until real provider session is ONLINE_VERIFIED
+      const isAuthVerified = await this._verifyProviderAuthBeforeReplay();
+      if (!isAuthVerified) {
+        console.warn('[POSA Engine] Replay held: Identity provider re-authentication required.');
+        return;
+      }
+
       const rawQueue = await this.getPOSAQueue();
       if (!rawQueue || rawQueue.length === 0) return;
 
@@ -2340,6 +2347,22 @@
     setConflictStrategy(strategy) {
       this.conflictStrategy = strategy;
       console.log(`[POSA Engine] Conflict Resolution Strategy set to '${strategy}'`);
+    }
+
+    /** Reconnection Auth Gate: Ensure provider authentication is ONLINE_VERIFIED before replaying queued ops */
+    async _verifyProviderAuthBeforeReplay() {
+      if (typeof window !== 'undefined' && window.ASGOffline) {
+        if (this._reauthPending) {
+          console.log('[POSA Gate] Reconnection detected. Temporarily gating POSA queue replay until identity provider re-authenticates...');
+          return false;
+        }
+      }
+      return true;
+    }
+
+    setReauthPending(pending = true) {
+      this._reauthPending = !!pending;
+      console.log(`[POSA Gate] Identity Provider Re-authentication Gate: ${this._reauthPending ? 'LOCKED (Gated)' : 'UNLOCKED (ONLINE_VERIFIED)'}`);
     }
 
     /** 1-Line API: Save record to in-browser database (Auto-synced when online via POSA DAG) */

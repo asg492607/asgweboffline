@@ -198,6 +198,17 @@ async function cacheOnly(request) {
   return new Response('', { status: 404, statusText: 'Resource Not In Cache' });
 }
 
+// Helper: Generate a cryptographically random opaque session token (Web Crypto API)
+function generateOpaqueSessionToken() {
+  try {
+    const bytes = new Uint8Array(24);
+    self.crypto.getRandomValues(bytes);
+    return 'asg_off_sess_' + Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {
+    return 'asg_off_sess_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+  }
+}
+
 // Helper: Check if request is a Firebase Auth or Google Identity request
 function isFirebaseAuthRequest(url) {
   const host = url.hostname.toLowerCase();
@@ -285,8 +296,8 @@ async function handleFirebaseAuthRequest(request) {
               localId: entitlement.localId,
               email: entitlement.email,
               displayName: entitlement.displayName,
-              idToken: `asg_offline_session_token_${entitlement.localId}`,
-              refreshToken: `asg_offline_session_refresh_${entitlement.localId}`,
+              idToken: generateOpaqueSessionToken(),
+              refreshToken: generateOpaqueSessionToken(),
               expiresIn: entitlement.expiresIn,
               registered: true,
               asgAuth: {
@@ -470,12 +481,22 @@ async function handleApiRequest(request) {
 
 // Intercept Fetch Requests
 self.addEventListener('fetch', (event) => {
-  const request = event.request;
+  let request = event.request;
   const url = new URL(request.url);
 
   // Skip chrome-extension or invalid schemes
   if (url.protocol.startsWith('chrome-extension')) {
     return;
+  }
+
+  // INVARIANT: Hard Local Transmission Boundary
+  // Strip asg_off_sess_* tokens from outgoing network requests to external servers
+  const authHeader = request.headers.get('Authorization') || '';
+  if (authHeader.includes('asg_off_sess_') || authHeader.includes('asg_offline_session_')) {
+    const cleanHeaders = new Headers(request.headers);
+    cleanHeaders.delete('Authorization');
+    request = new Request(request, { headers: cleanHeaders });
+    console.log('[ASG ServiceWorker] 🛡️ Stripped local offline session token from outgoing network request header:', url.pathname);
   }
 
   // 1. Intercept Firebase Auth / Identity requests for seamless offline login
