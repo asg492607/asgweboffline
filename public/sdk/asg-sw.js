@@ -210,10 +210,10 @@ function isFirebaseAuthRequest(url) {
          path.includes('/v1/accounts');
 }
 
-// Helper: Handle Firebase Auth Requests with Offline Replica Fallback
+// Helper: Handle Firebase Auth Requests with Offline Authentication Continuity (OAC)
 async function handleFirebaseAuthRequest(request) {
   const url = new URL(request.url);
-  const cache = await caches.open('asg-auth-cache');
+  const cache = await caches.open('asg-auth-entitlements');
 
   let requestBody = null;
   try {
@@ -222,54 +222,122 @@ async function handleFirebaseAuthRequest(request) {
     requestBody = JSON.parse(text);
   } catch (e) {}
 
-  const email = requestBody ? (requestBody.email || '') : '';
-  const cacheKey = email ? `auth:${email.toLowerCase()}` : `auth:${url.pathname}`;
+  const email = (requestBody && requestBody.email) ? requestBody.email.trim().toLowerCase() : '';
+  const cacheKey = email ? `auth:${email}` : `auth:${url.pathname}`;
 
   try {
     const networkResponse = await fetch(request.clone());
     if (networkResponse && networkResponse.status === 200) {
-      try { await cache.put(cacheKey, networkResponse.clone()); } catch (e) {}
+      // Capture authentic server entitlement on successful online authentication
+      try {
+        const resClone = networkResponse.clone();
+        const authData = await resClone.json();
+
+        if (authData && (authData.localId || authData.email)) {
+          const verifiedAt = Date.now();
+          const ttlMs = 7 * 24 * 60 * 60 * 1000; // 7-day entitlement window
+
+          const entitlementRecord = {
+            kind: authData.kind || 'identitytoolkit#VerifyPasswordResponse',
+            localId: authData.localId,
+            email: authData.email || email,
+            displayName: authData.displayName || (email ? email.split('@')[0] : 'User'),
+            idToken: authData.idToken,
+            refreshToken: authData.refreshToken,
+            expiresIn: authData.expiresIn || '86400',
+            verifiedOnlineAt: new Date(verifiedAt).toISOString(),
+            allowedOfflineUntil: new Date(verifiedAt + ttlMs).toISOString(),
+            mode: 'OFFLINE_VERIFIED_SESSION',
+            deviceBound: true,
+            serverAuthority: false
+          };
+
+          const entitlementResponse = new Response(JSON.stringify(entitlementRecord), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          });
+
+          await cache.put(cacheKey, entitlementResponse);
+          console.log(`[ASG ServiceWorker] 🔒 Recorded verified online auth entitlement for '${email}' (Expires: ${entitlementRecord.allowedOfflineUntil})`);
+        }
+      } catch (e) {
+        console.warn('[ASG ServiceWorker] Could not parse online auth response:', e.message);
+      }
     }
     return networkResponse;
   } catch (err) {
-    console.log('[ASG ServiceWorker] 🔑 Firebase Auth offline mode for:', url.pathname);
+    console.log('[ASG ServiceWorker] 🔑 Firebase Auth offline request for:', url.pathname);
 
-    // Check if we have a cached auth session response for this user
-    if (cacheKey) {
-      const cachedAuth = await cache.match(cacheKey);
-      if (cachedAuth) {
-        console.log('[ASG ServiceWorker] ✅ Serving cached Firebase Auth session for:', email);
-        return cachedAuth;
+    // 1. Check if a device-bound entitlement exists for this email
+    if (email && cacheKey) {
+      const cachedResponse = await cache.match(cacheKey);
+      if (cachedResponse) {
+        try {
+          const entitlement = await cachedResponse.json();
+          const now = Date.now();
+          const expiryTime = entitlement.allowedOfflineUntil ? new Date(entitlement.allowedOfflineUntil).getTime() : 0;
+
+          if (now < expiryTime) {
+            console.log(`[ASG ServiceWorker] ✅ Serving verified OFFLINE_VERIFIED_SESSION for '${email}' (Verified online: ${entitlement.verifiedOnlineAt})`);
+
+            const verifiedOfflineResponse = {
+              kind: entitlement.kind,
+              localId: entitlement.localId,
+              email: entitlement.email,
+              displayName: entitlement.displayName,
+              idToken: entitlement.idToken,
+              refreshToken: entitlement.refreshToken,
+              expiresIn: entitlement.expiresIn,
+              registered: true,
+              asgAuth: {
+                mode: 'OFFLINE_VERIFIED_SESSION',
+                verifiedOnlineAt: entitlement.verifiedOnlineAt,
+                allowedOfflineUntil: entitlement.allowedOfflineUntil,
+                deviceBound: true,
+                serverAuthority: false
+              }
+            };
+
+            return new Response(JSON.stringify(verifiedOfflineResponse), {
+              status: 200,
+              headers: {
+                'Content-Type': 'application/json; charset=UTF-8',
+                'X-ASG-Offline-Auth': 'OFFLINE_VERIFIED_SESSION',
+                'X-ASG-Server-Authority': 'false'
+              }
+            });
+          } else {
+            console.warn(`[ASG ServiceWorker] ⛔ Auth entitlement expired for '${email}' (Expired at: ${entitlement.allowedOfflineUntil}).`);
+          }
+        } catch (e) {}
       }
     }
 
-    // Synthesize valid Firebase Auth HTTP 200 response so Firebase SDK completes login offline
-    function hashStr(str) {
-      let h = 0;
-      for (let i = 0; i < str.length; i++) { h = (h << 5) - h + str.charCodeAt(i); h |= 0; }
-      return Math.abs(h);
-    }
+    // 2. Unverified or Expired Account: STRICTLY DENY OFFLINE AUTHENTICATION (HTTP 401)
+    console.warn(`[ASG ServiceWorker] ⛔ Offline authentication DENIED for '${email || 'unspecified'}'. No prior online verification recorded on this device.`);
 
-    const uid = email ? ('offline_uid_' + hashStr(email)) : ('offline_uid_' + Date.now());
-    const syntheticAuthResponse = {
-      kind: 'identitytoolkit#VerifyPasswordResponse',
-      localId: uid,
-      email: email || 'user@offline.local',
-      displayName: email ? (email.split('@')[0]) : 'Offline User',
-      idToken: 'asg_offline_id_token_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10),
-      registered: true,
-      refreshToken: 'asg_offline_refresh_token_' + Date.now(),
-      expiresIn: '86400',
-      isOfflineSynthetic: true
-    };
-
-    return new Response(JSON.stringify(syntheticAuthResponse), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'X-ASG-Offline-Auth': 'SYNTHETIC_OFFLINE_LOGIN'
+    return new Response(
+      JSON.stringify({
+        error: {
+          code: 401,
+          message: 'OFFLINE_AUTH_DENIED: This device has not previously verified credentials online for this account. Online authentication required.',
+          errors: [
+            {
+              domain: 'global',
+              reason: 'UNVERIFIED_OFFLINE_DEVICE',
+              message: 'No active device-bound online authentication entitlement found for this account.'
+            }
+          ]
+        }
+      }),
+      {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'X-ASG-Offline-Auth': 'DENIED'
+        }
       }
-    });
+    );
   }
 }
 
