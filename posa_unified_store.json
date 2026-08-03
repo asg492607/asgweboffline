@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
-  "generation": 4051,
-  "createdAt": "2026-08-03T15:35:42.870Z",
-  "checksum": "6e6b76240b2f3c93213bb318c23bb27d8c271088a8fa6aada5a083b2fd2edfc5",
+  "generation": 4053,
+  "createdAt": "2026-08-03T16:05:35.141Z",
+  "checksum": "5f35c44d1d2427731444e70c38bc1e2d478e83d97d6c57860fd7b99555e7710d",
   "records": [
     [
       "user_records:election_rec_1",
@@ -123,6 +123,62 @@
         "hlc": "2026-08-02T18:07:49.937Z-0001-chrome_profile_beta",
         "deviceId": "chrome_profile_beta"
       }
+    ],
+    [
+      "customers:tmp_cust_1785773117563",
+      {
+        "collection": "customers",
+        "recordId": "tmp_cust_1785773117563",
+        "payload": {
+          "id": "tmp_cust_1785773117563",
+          "name": "John Doe Evaluator",
+          "email": "evaluator@test.org"
+        },
+        "updatedAt": "2026-08-03T16:05:17.563Z",
+        "hlc": "2026-08-03T16:05:17.563Z"
+      }
+    ],
+    [
+      "orders:tmp_ord_1785773117563",
+      {
+        "collection": "orders",
+        "recordId": "tmp_ord_1785773117563",
+        "payload": {
+          "id": "tmp_ord_1785773117563",
+          "customerId": "tmp_cust_1785773117563",
+          "amount": 250
+        },
+        "updatedAt": "2026-08-03T16:05:17.564Z",
+        "hlc": "2026-08-03T16:05:17.564Z"
+      }
+    ],
+    [
+      "customers:tmp_cust_1785773135140",
+      {
+        "collection": "customers",
+        "recordId": "tmp_cust_1785773135140",
+        "payload": {
+          "id": "tmp_cust_1785773135140",
+          "name": "John Doe Evaluator",
+          "email": "evaluator@test.org"
+        },
+        "updatedAt": "2026-08-03T16:05:35.140Z",
+        "hlc": "2026-08-03T16:05:35.140Z"
+      }
+    ],
+    [
+      "orders:tmp_ord_1785773135140",
+      {
+        "collection": "orders",
+        "recordId": "tmp_ord_1785773135140",
+        "payload": {
+          "id": "tmp_ord_1785773135140",
+          "customerId": "tmp_cust_1785773135140",
+          "amount": 250
+        },
+        "updatedAt": "2026-08-03T16:05:35.140Z",
+        "hlc": "2026-08-03T16:05:35.140Z"
+      }
     ]
   ],
   "idempotencyKeys": [
@@ -233,6 +289,34 @@
         "status": "SYNCED",
         "key": "user_records:shared_commutativity_item",
         "winner": "client"
+      }
+    ],
+    [
+      "op_1785773117563_1",
+      {
+        "status": "SYNCED",
+        "key": "customers:tmp_cust_1785773117563"
+      }
+    ],
+    [
+      "op_1785773117564_2",
+      {
+        "status": "SYNCED",
+        "key": "orders:tmp_ord_1785773117563"
+      }
+    ],
+    [
+      "op_1785773135140_1",
+      {
+        "status": "SYNCED",
+        "key": "customers:tmp_cust_1785773135140"
+      }
+    ],
+    [
+      "op_1785773135140_2",
+      {
+        "status": "SYNCED",
+        "key": "orders:tmp_ord_1785773135140"
       }
     ]
   ]

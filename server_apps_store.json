@@ -178,5 +178,33 @@
       "createdAt": "2026-08-03T15:35:30.682Z",
       "updatedAt": "2026-08-03T15:35:30.682Z"
     }
+  ],
+  [
+    "localhost-offline",
+    {
+      "appId": "localhost-offline",
+      "appName": "localhost-offline",
+      "domain": "localhost",
+      "frontendUrl": "http://localhost:3000",
+      "backendUrl": "http://localhost:3000",
+      "websiteUrl": "http://localhost:3000",
+      "backendApiUrl": "http://localhost:3000",
+      "apiKeyHash": "98fa6624253eff1df0bd161baab7d366e611d2969bc475e5ecd80eed9a7a3ff8",
+      "contactEmail": "admin@localhost",
+      "cacheStrategy": "stale-while-revalidate",
+      "themeColor": "#6366f1",
+      "backgroundColor": "#0f172a",
+      "enableBackgroundSync": true,
+      "enableOfflineNotifications": true,
+      "precacheUrls": [
+        "/",
+        "/index.html",
+        "/styles.css",
+        "/main.js",
+        "/favicon.ico"
+      ],
+      "createdAt": "2026-08-03T16:05:17.562Z",
+      "updatedAt": "2026-08-03T16:22:48.844Z"
+    }
   ]
 ]
