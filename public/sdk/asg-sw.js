@@ -198,6 +198,81 @@ async function cacheOnly(request) {
   return new Response('', { status: 404, statusText: 'Resource Not In Cache' });
 }
 
+// Helper: Check if request is a Firebase Auth or Google Identity request
+function isFirebaseAuthRequest(url) {
+  const host = url.hostname.toLowerCase();
+  const path = url.pathname.toLowerCase();
+  return host.includes('identitytoolkit.googleapis.com') ||
+         host.includes('securetoken.googleapis.com') ||
+         path.includes('accounts:signinwithpassword') ||
+         path.includes('accounts:signup') ||
+         path.includes('accounts:lookup') ||
+         path.includes('/v1/accounts');
+}
+
+// Helper: Handle Firebase Auth Requests with Offline Replica Fallback
+async function handleFirebaseAuthRequest(request) {
+  const url = new URL(request.url);
+  const cache = await caches.open('asg-auth-cache');
+
+  let requestBody = null;
+  try {
+    const clone = request.clone();
+    const text = await clone.text();
+    requestBody = JSON.parse(text);
+  } catch (e) {}
+
+  const email = requestBody ? (requestBody.email || '') : '';
+  const cacheKey = email ? `auth:${email.toLowerCase()}` : `auth:${url.pathname}`;
+
+  try {
+    const networkResponse = await fetch(request.clone());
+    if (networkResponse && networkResponse.status === 200) {
+      try { await cache.put(cacheKey, networkResponse.clone()); } catch (e) {}
+    }
+    return networkResponse;
+  } catch (err) {
+    console.log('[ASG ServiceWorker] 🔑 Firebase Auth offline mode for:', url.pathname);
+
+    // Check if we have a cached auth session response for this user
+    if (cacheKey) {
+      const cachedAuth = await cache.match(cacheKey);
+      if (cachedAuth) {
+        console.log('[ASG ServiceWorker] ✅ Serving cached Firebase Auth session for:', email);
+        return cachedAuth;
+      }
+    }
+
+    // Synthesize valid Firebase Auth HTTP 200 response so Firebase SDK completes login offline
+    function hashStr(str) {
+      let h = 0;
+      for (let i = 0; i < str.length; i++) { h = (h << 5) - h + str.charCodeAt(i); h |= 0; }
+      return Math.abs(h);
+    }
+
+    const uid = email ? ('offline_uid_' + hashStr(email)) : ('offline_uid_' + Date.now());
+    const syntheticAuthResponse = {
+      kind: 'identitytoolkit#VerifyPasswordResponse',
+      localId: uid,
+      email: email || 'user@offline.local',
+      displayName: email ? (email.split('@')[0]) : 'Offline User',
+      idToken: 'asg_offline_id_token_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10),
+      registered: true,
+      refreshToken: 'asg_offline_refresh_token_' + Date.now(),
+      expiresIn: '86400',
+      isOfflineSynthetic: true
+    };
+
+    return new Response(JSON.stringify(syntheticAuthResponse), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'X-ASG-Offline-Auth': 'SYNTHETIC_OFFLINE_LOGIN'
+      }
+    });
+  }
+}
+
 // Helper: Determine if a request is an API / Data request
 function isApiRequest(url, request) {
   const path = url.pathname.toLowerCase();
@@ -335,7 +410,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Intercept API routes (including Firebase, Firestore, GraphQL, REST, and cross-origin APIs)
+  // 1. Intercept Firebase Auth / Identity requests for seamless offline login
+  if (isFirebaseAuthRequest(url)) {
+    event.respondWith(handleFirebaseAuthRequest(request));
+    return;
+  }
+
+  // 2. Intercept API routes (including Firebase, Firestore, GraphQL, REST, and cross-origin APIs)
   if (isApiRequest(url, request)) {
     event.respondWith(handleApiRequest(request));
     return;
