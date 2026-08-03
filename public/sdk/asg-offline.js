@@ -2588,6 +2588,80 @@
         }
       });
     }
+
+    // ==================== OFFLINE FILE DOWNLOAD & EXPORT ENGINES ====================
+
+    /** 1-Line API: Trigger local browser file download for a Blob (Works 100% offline) */
+    downloadBlob(blob, filename = 'download.bin') {
+      if (typeof window === 'undefined') return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 1000);
+      this.showToast('📥 File Download Started', `File '${filename}' downloaded locally.`, 'success');
+    }
+
+    /** 1-Line API: Convert JSON array to CSV and trigger instant offline file download */
+    downloadJsonAsCsv(arrayOfObjects = [], filename = 'export.csv') {
+      if (!Array.isArray(arrayOfObjects) || arrayOfObjects.length === 0) {
+        this.showToast('⚠️ No Data to Export', 'Cannot export empty array as CSV.', 'warning');
+        return;
+      }
+
+      const headers = Object.keys(arrayOfObjects[0] || {});
+      const csvLines = [headers.join(',')];
+
+      for (const row of arrayOfObjects) {
+        const line = headers.map(h => {
+          let val = row[h] === null || row[h] === undefined ? '' : String(row[h]);
+          if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+            val = '"' + val.replace(/"/g, '""') + '"';
+          }
+          return val;
+        }).join(',');
+        csvLines.push(line);
+      }
+
+      const csvString = csvLines.join('\n');
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const csvFilename = filename.toLowerCase().endsWith('.csv') ? filename : `${filename}.csv`;
+      this.downloadBlob(blob, csvFilename);
+    }
+
+    /** 1-Line API: Save document or binary file Blob in local IndexedDB store for offline retrieval */
+    async saveOfflineDocument(collection, docId, blobOrData) {
+      if (!this.db) return false;
+      return new Promise((resolve, reject) => {
+        const tx = this.db.transaction(['offline_records'], 'readwrite');
+        const store = tx.objectStore('offline_records');
+        const req = store.put({
+          id: `${collection}:${docId}`,
+          collection,
+          docId,
+          data: blobOrData,
+          savedAt: new Date().toISOString()
+        });
+        req.onsuccess = () => resolve(true);
+        req.onerror = (e) => reject(e);
+      });
+    }
+
+    /** 1-Line API: Retrieve saved document or binary file Blob from local IndexedDB store offline */
+    async getOfflineDocument(collection, docId) {
+      if (!this.db) return null;
+      return new Promise((resolve) => {
+        const tx = this.db.transaction(['offline_records'], 'readonly');
+        const req = tx.objectStore('offline_records').get(`${collection}:${docId}`);
+        req.onsuccess = () => resolve(req.result ? req.result.data : null);
+        req.onerror = () => resolve(null);
+      });
+    }
   }
 
   // Instantiate SDK and export globally

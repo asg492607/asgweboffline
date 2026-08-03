@@ -85,9 +85,31 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Helper: Check if request is a static media asset (CSS, JS, Fonts, Images)
+// Helper: Check if request is a static asset, downloadable document, media, or CDN library
+function isDownloadableOrStaticAsset(url) {
+  const path = url.pathname.toLowerCase();
+  const host = url.hostname.toLowerCase();
+
+  // 1. Static web assets & document/media file extensions
+  if (/\.(css|js|mjs|woff2?|ttf|eot|png|jpe?g|gif|svg|ico|webp|pdf|xlsx?|csv|docx?|pptx?|txt|json|xml|zip|gz|tar|mp3|mp4|webm)$/i.test(path)) {
+    return true;
+  }
+
+  // 2. CDN library domains & font providers
+  if (host.includes('cdn.jsdelivr.net') ||
+      host.includes('cdnjs.cloudflare.com') ||
+      host.includes('unpkg.com') ||
+      host.includes('fonts.googleapis.com') ||
+      host.includes('fonts.gstatic.com') ||
+      host.includes('cdn-icons-png.flaticon.com')) {
+    return true;
+  }
+
+  return false;
+}
+
 function isStaticAsset(url) {
-  return /\.(css|js|woff2?|ttf|png|jpe?g|gif|svg|ico|webp)$/i.test(url.pathname);
+  return isDownloadableOrStaticAsset(url);
 }
 
 // Helper: Cache-First strategy
