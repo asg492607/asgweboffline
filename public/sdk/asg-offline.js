@@ -387,7 +387,32 @@
           }
         } catch (e) {}
 
-        const response = await originalFetch(input, options);
+        let response;
+        try {
+          response = await originalFetch(input, options);
+        } catch (netErr) {
+          // If offline and caller made a non-GET API call directly:
+          if (!self.isOnline && method !== 'GET') {
+            try {
+              const parsed = new URL(url, window.location.origin);
+              const pathParts = parsed.pathname.replace(/^\/api\/v?\d*\//, '').replace(/^\//, '').split('/');
+              const collection = pathParts[0] || 'records';
+              await self.posaQueueOperation({
+                collection,
+                action: method === 'POST' ? 'CREATE' : (method === 'DELETE' ? 'DELETE' : 'UPDATE'),
+                payload: requestBody || {},
+                priority: 'HIGH'
+              });
+              return new Response(JSON.stringify({
+                success: true,
+                offlineQueued: true,
+                message: 'Network offline. Request saved in ASG POSA local database.'
+              }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+            } catch (e) {}
+          }
+          throw netErr;
+        }
+
         const cloned = response.clone();
 
         // Observe same-origin API calls AND cross-origin calls (for 3rd-party website support)

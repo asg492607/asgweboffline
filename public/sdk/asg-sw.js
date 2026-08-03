@@ -198,7 +198,43 @@ async function cacheOnly(request) {
   return new Response('', { status: 404, statusText: 'Resource Not In Cache' });
 }
 
-// Helper: Handle API requests with Network-First and Offline JSON Fallback
+// Helper: Determine if a request is an API / Data request
+function isApiRequest(url, request) {
+  const path = url.pathname.toLowerCase();
+  const host = url.hostname.toLowerCase();
+
+  // 1. Common API path patterns
+  if (path.includes('/api/') || path.startsWith('/v1/') || path.startsWith('/v2/') ||
+      path.includes('/graphql') || path.includes('/rest/') || path.includes('/query') ||
+      path.includes('/db/') || path.includes('/data/')) {
+    return true;
+  }
+
+  // 2. Firebase, Firestore, Google Cloud, Supabase, Appwrite API domains
+  if (host.includes('firestore.googleapis.com') ||
+      host.includes('identitytoolkit.googleapis.com') ||
+      host.includes('firebase') ||
+      host.includes('supabase') ||
+      host.includes('appwrite')) {
+    return true;
+  }
+
+  // 3. Request headers indicating API data exchange
+  const accept = request.headers.get('accept') || '';
+  const contentType = request.headers.get('content-type') || '';
+  if (accept.includes('application/json') || contentType.includes('application/json')) {
+    return true;
+  }
+
+  // 4. Non-GET requests that are not standard HTML form navigations
+  if (request.method !== 'GET' && request.mode !== 'navigate') {
+    return true;
+  }
+
+  return false;
+}
+
+// Helper: Handle API requests with Network-First and Offline JSON / Cache Fallback
 async function handleApiRequest(request) {
   const url = new URL(request.url);
 
@@ -209,11 +245,12 @@ async function handleApiRequest(request) {
                              url.pathname.includes('/api/v1/alerts') ||
                              url.pathname.includes('/api/v1/config');
 
+  const cache = await caches.open(CACHE_NAME);
+
   try {
     const networkResponse = await fetch(request.clone());
-    if (networkResponse && networkResponse.status === 200 && request.method === 'GET') {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, networkResponse.clone());
+    if (networkResponse && (networkResponse.status >= 200 && networkResponse.status < 300) && request.method === 'GET') {
+      try { cache.put(request, networkResponse.clone()); } catch(e){}
     }
     return networkResponse;
   } catch (err) {
@@ -226,10 +263,11 @@ async function handleApiRequest(request) {
       });
     }
 
-    // If it's a GET request, check cache
+    // If it's a GET request, check cache first for exact match or ignoring search query
     if (request.method === 'GET') {
-      const cachedResponse = await caches.match(request);
+      const cachedResponse = (await cache.match(request)) || (await caches.match(request, { ignoreSearch: true }));
       if (cachedResponse) {
+        console.log('[ASG ServiceWorker] ✅ Serving cached API data offline:', request.url);
         return cachedResponse;
       }
     } else {
@@ -240,7 +278,7 @@ async function handleApiRequest(request) {
       });
     }
 
-    // Return synthesized JSON offline fallback for GET API routes
+    // Return synthesized JSON offline fallback for GET API routes if not in cache
     return new Response(
       JSON.stringify({
         success: true,
@@ -273,8 +311,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Intercept API routes (/api/) for offline fallback
-  if (url.pathname.includes('/api/')) {
+  // Intercept API routes (including Firebase, Firestore, GraphQL, REST, and cross-origin APIs)
+  if (isApiRequest(url, request)) {
     event.respondWith(handleApiRequest(request));
     return;
   }
