@@ -1522,7 +1522,8 @@
         type,
         authToken: authToken || this.authToken || null,
         userContext: userContext || this.userContext || null,
-        status: 'PENDING',
+        status: 'LOCAL_ACCEPTED',
+        stage: 'PENDING_SERVER_COMMIT',
         hash,
         signature: this.appSecret ? 'hmac_' + hash : null,
         lastRetryTimestamp: null,
@@ -2542,21 +2543,26 @@
         await this.posaDelete(collection, recordId);
       }
 
-      const httpStatus = mode === 'DEFERRED' ? 202 : 200;
-      const message = mode === 'DEFERRED'
-        ? 'Operation queued offline. Pending server validation upon reconnection.'
-        : 'Operation applied locally to IndexedDB & POSA queue.';
+      const httpStatus = 202; // Always HTTP 202 Accepted for offline mutations
+      const message = 'Operation accepted locally into ASG POSA journal. Pending authoritative commit upon reconnection.';
 
       return new Response(JSON.stringify({
         success: true,
         offlineQueued: true,
+        status: 'LOCAL_ACCEPTED',
+        stage: 'PENDING_SERVER_COMMIT',
         mode,
         record: payload,
         message,
         timestamp: new Date().toISOString()
       }), {
         status: httpStatus,
-        headers: { 'Content-Type': 'application/json', 'X-ASG-Runtime-Mode': mode }
+        headers: {
+          'Content-Type': 'application/json',
+          'X-ASG-Runtime-Mode': mode,
+          'X-ASG-Operation-Status': 'LOCAL_ACCEPTED',
+          'X-ASG-Operation-Stage': 'PENDING_SERVER_COMMIT'
+        }
       });
     }
   }

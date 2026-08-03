@@ -263,41 +263,65 @@ async function handleApiRequest(request) {
       });
     }
 
-    // If it's a GET request, check cache first for exact match or ignoring search query
+    // If it's a GET request, check cache using EXACT URL fingerprinting (ignoreSearch: false)
     if (request.method === 'GET') {
-      const cachedResponse = (await cache.match(request)) || (await caches.match(request, { ignoreSearch: true }));
+      const cachedResponse = await cache.match(request, { ignoreSearch: false });
       if (cachedResponse) {
-        console.log('[ASG ServiceWorker] ✅ Serving cached API data offline:', request.url);
-        return cachedResponse;
+        console.log('[ASG ServiceWorker] ✅ Serving cached API data offline (CACHE_HIT):', request.url);
+        // Clone response and attach CACHE_HIT status header
+        const headers = new Headers(cachedResponse.headers);
+        headers.set('X-ASG-Cache-Status', 'CACHE_HIT');
+        headers.set('X-ASG-Offline-Source', 'CacheStorage');
+        return new Response(cachedResponse.body, {
+          status: cachedResponse.status,
+          statusText: cachedResponse.statusText,
+          headers
+        });
       }
-    } else {
-      // Non-GET requests (POST/PUT/DELETE) return HTTP 503 so caller knows network is down
-      return new Response(JSON.stringify({ success: false, error: 'Offline mode active. Request queued locally.', offline: true }), {
-        status: 503,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
 
-    // Return synthesized JSON offline fallback for GET API routes if not in cache
-    return new Response(
-      JSON.stringify({
-        success: true,
-        offline: true,
-        source: 'in_browser_offline_db',
-        _branding: 'Powered by ASG Offline Web Service (https://github.com/asg492607/asgweboffline)',
-        message: 'Request processed via In-Browser Offline API Engine (IndexedDB/CacheStorage).',
-        timestamp: new Date().toISOString()
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Powered-By': 'ASG-Offline-Web-Service',
-          'X-ASG-Offline-Engine': 'https://github.com/asg492607/asgweboffline',
-          'X-ASG-Offline-Source': 'In-Browser-DB'
+      // GET Cache Miss when offline: Return HTTP 504 Gateway Timeout with explicit CACHE_MISS / OFFLINE_UNAVAILABLE status
+      console.warn('[ASG ServiceWorker] ⚠️ API request cache miss offline (CACHE_MISS):', request.url);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          offline: true,
+          cacheStatus: 'CACHE_MISS',
+          error: 'OFFLINE_UNAVAILABLE',
+          reason: 'Requested API resource is not cached in local ASG offline storage.',
+          url: request.url,
+          timestamp: new Date().toISOString()
+        }),
+        {
+          status: 504,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-ASG-Cache-Status': 'CACHE_MISS',
+            'X-ASG-Offline-Source': 'None'
+          }
         }
-      }
-    );
+      );
+    } else {
+      // Non-GET mutating requests (POST/PUT/PATCH/DELETE) return HTTP 202 Accepted (LOCAL_ACCEPTED / PENDING_SERVER_COMMIT)
+      return new Response(
+        JSON.stringify({
+          success: true,
+          offlineQueued: true,
+          status: 'LOCAL_ACCEPTED',
+          stage: 'PENDING_SERVER_COMMIT',
+          message: 'Operation accepted locally into ASG POSA journal. Pending authoritative commit upon reconnection.',
+          url: request.url,
+          timestamp: new Date().toISOString()
+        }),
+        {
+          status: 202,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-ASG-Operation-Status': 'LOCAL_ACCEPTED',
+            'X-ASG-Operation-Stage': 'PENDING_SERVER_COMMIT'
+          }
+        }
+      );
+    }
   }
 }
 
