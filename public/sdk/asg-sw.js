@@ -112,6 +112,13 @@ function isStaticAsset(url) {
   return isDownloadableOrStaticAsset(url);
 }
 
+// Helper: Get precached App Shell navigation fallback (HTML, index.html, or root)
+async function getAppShellFallback(request) {
+  const cachedMatch = await caches.match(request) || await caches.match('/') || await caches.match('/index.html');
+  if (cachedMatch) return cachedMatch;
+  return new Response(OFFLINE_FALLBACK_HTML, { headers: { 'Content-Type': 'text/html' } });
+}
+
 // Helper: Cache-First strategy
 async function cacheFirst(request) {
   const cachedResponse = await caches.match(request);
@@ -133,7 +140,7 @@ async function cacheFirst(request) {
     return networkResponse;
   } catch (err) {
     if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
-      return new Response(OFFLINE_FALLBACK_HTML, { headers: { 'Content-Type': 'text/html' } });
+      return getAppShellFallback(request);
     }
     return new Response('', { status: 504, statusText: 'Gateway Timeout (Offline)' });
   }
@@ -161,7 +168,7 @@ async function staleWhileRevalidate(request) {
   }
 
   if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
-    return new Response(OFFLINE_FALLBACK_HTML, { headers: { 'Content-Type': 'text/html' } });
+    return getAppShellFallback(request);
   }
 
   return new Response(JSON.stringify({ error: 'Offline mode active', offline: true }), {
@@ -184,7 +191,7 @@ async function networkFirst(request) {
     if (cachedResponse) return cachedResponse;
 
     if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
-      return new Response(OFFLINE_FALLBACK_HTML, { headers: { 'Content-Type': 'text/html' } });
+      return getAppShellFallback(request);
     }
 
     return new Response(JSON.stringify({ error: 'Offline mode active', offline: true }), {
@@ -194,13 +201,13 @@ async function networkFirst(request) {
   }
 }
 
-// Helper: Network-Only strategy (Option A: Data/API Sync Only - Web page uses network, API syncs offline)
+// Helper: Network-Only strategy
 async function networkOnly(request) {
   try {
     return await fetch(request.clone());
   } catch (err) {
     if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
-      return new Response(OFFLINE_FALLBACK_HTML, { headers: { 'Content-Type': 'text/html' } });
+      return getAppShellFallback(request);
     }
     return new Response(JSON.stringify({ error: 'Network unavailable (Network-Only mode)', offline: true }), {
       status: 504,
@@ -215,7 +222,7 @@ async function cacheOnly(request) {
   if (cachedResponse) return cachedResponse;
 
   if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
-    return new Response(OFFLINE_FALLBACK_HTML, { headers: { 'Content-Type': 'text/html' } });
+    return getAppShellFallback(request);
   }
   return new Response('', { status: 404, statusText: 'Resource Not In Cache' });
 }
@@ -605,5 +612,19 @@ self.addEventListener('message', async (event) => {
     if (event.ports && event.ports[0]) {
       event.ports[0].postMessage({ success: true, urls });
     }
+  }
+});
+
+// Background Sync Wake-Up Trigger (POSA Replay Wake-Up)
+self.addEventListener('sync', (event) => {
+  console.log(`[ASG ServiceWorker] 🔄 Background Sync event fired (tag: '${event.tag}')`);
+  if (event.tag === 'asg-posa-sync' || event.tag.includes('asg')) {
+    event.waitUntil(
+      self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'TRIGGER_POSA_SYNC', source: 'BACKGROUND_SYNC_EVENT' });
+        });
+      })
+    );
   }
 });

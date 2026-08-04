@@ -164,6 +164,23 @@
           sendConfig(reg.active);
         }
       });
+
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'TRIGGER_POSA_SYNC') {
+          console.log('[ASG Offline SDK] 🔄 Background Sync wake-up triggered by Service Worker');
+          if (this.isOnline) {
+            this.processOfflineQueue();
+          }
+        }
+      });
+    }
+
+    requestBackgroundSync() {
+      if ('serviceWorker' in navigator && 'SyncManager' in window && this.swRegistration) {
+        try {
+          this.swRegistration.sync.register('asg-posa-sync').catch(() => {});
+        } catch (e) {}
+      }
     }
 
     async requestPersistentStorage() {
