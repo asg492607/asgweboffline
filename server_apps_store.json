@@ -183,13 +183,13 @@
     "localhost-offline",
     {
       "appId": "localhost-offline",
-      "appName": "localhost-offline",
+      "appName": "E2E Evaluator App",
       "domain": "localhost",
       "frontendUrl": "http://localhost:3000",
       "backendUrl": "http://localhost:3000",
       "websiteUrl": "http://localhost:3000",
       "backendApiUrl": "http://localhost:3000",
-      "apiKeyHash": "98fa6624253eff1df0bd161baab7d366e611d2969bc475e5ecd80eed9a7a3ff8",
+      "apiKeyHash": "760fa517bd2709c44380c6ea32b7bc6a09471b173649e291d2de9475141365b7",
       "contactEmail": "admin@localhost",
       "cacheStrategy": "stale-while-revalidate",
       "themeColor": "#6366f1",
@@ -204,7 +204,7 @@
         "/favicon.ico"
       ],
       "createdAt": "2026-08-03T16:05:17.562Z",
-      "updatedAt": "2026-08-03T16:22:48.844Z"
+      "updatedAt": "2026-08-04T09:49:14.757Z"
     }
   ]
 ]

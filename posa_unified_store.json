@@ -1,322 +1,267 @@
 {
   "formatVersion": 1,
-  "generation": 4053,
-  "createdAt": "2026-08-03T16:05:35.141Z",
-  "checksum": "5f35c44d1d2427731444e70c38bc1e2d478e83d97d6c57860fd7b99555e7710d",
+  "generation": 8,
+  "createdAt": "2026-08-04T09:49:14.759Z",
+  "checksum": "977e45dd3f2e4b36c9a020a2e70245953cfa3c1dccf8664fc83acaf20489ba14",
   "records": [
     [
-      "user_records:election_rec_1",
+      "orders:ord_501",
       {
-        "collection": "user_records",
-        "recordId": "election_rec_1",
+        "collection": "orders",
+        "recordId": "ord_501",
         "payload": {
-          "id": "election_rec_1",
-          "title": "Promoted from .tmp"
+          "id": "ord_501",
+          "item": "Laptop",
+          "price": 1200,
+          "notes": "Dev B Overwrite Notes",
+          "priority": "EXPEDITED",
+          "_mergedAt": "2026-08-04T09:36:48.948Z"
         },
-        "hlc": "2026-08-02T17:44:00.000Z-0001-dev_election"
+        "updatedAt": "2026-08-04T09:36:48.948Z",
+        "hlc": "2026-08-04T09:36:48.980Z-0001-dev_beta",
+        "deviceId": "dev_beta"
       }
     ],
     [
-      "user_records:storm_rec_001",
+      "inventory:inv_10",
       {
-        "collection": "user_records",
-        "recordId": "storm_rec_001",
+        "collection": "inventory",
+        "recordId": "inv_10",
         "payload": {
-          "id": "storm_rec_001",
-          "title": "Storm Invariant Test",
-          "balance": 50000
+          "id": "inv_10",
+          "title": "Offline Subnet Scanner",
+          "qty": 50
         },
-        "updatedAt": "2026-08-02T17:58:39.578Z",
-        "hlc": "2026-08-02T17:58:39.502Z-0001-dev_storm_tester",
-        "deviceId": "dev_storm_tester"
+        "updatedAt": "2026-08-04T09:36:48.952Z",
+        "hlc": "2026-08-04T09:36:48.952Z-0001-peer_node_777",
+        "deviceId": "peer_node_777"
       }
     ],
     [
-      "user_records:shared_item_001",
-      {
-        "collection": "user_records",
-        "recordId": "shared_item_001",
-        "payload": {
-          "id": "shared_item_001",
-          "title": "State Edit by Profile B (NEWER HLC WINNER)",
-          "price": 299,
-          "category": "STATE"
-        },
-        "updatedAt": "2026-08-02T18:09:11.175Z",
-        "hlc": "2026-08-02T17:59:11.170Z-0001-chrome_profile_alpha",
-        "deviceId": "chrome_profile_alpha"
-      }
-    ],
-    [
-      "user_records:cmd_item_002",
-      {
-        "collection": "user_records",
-        "recordId": "cmd_item_002",
-        "payload": {
-          "id": "cmd_item_002",
-          "title": "Command Op from Profile B (Order Placement)",
-          "price": 900,
-          "category": "COMMAND"
-        },
-        "updatedAt": "2026-08-02T18:04:12.171Z",
-        "hlc": "2026-08-02T18:04:12.171Z-0001-chrome_profile_beta",
-        "deviceId": "chrome_profile_beta"
-      }
-    ],
-    [
-      "user_records:event_item_002",
-      {
-        "collection": "user_records",
-        "recordId": "event_item_002",
-        "payload": {
-          "id": "event_item_002",
-          "title": "Event Audit Log from Profile B",
-          "category": "EVENT"
-        },
-        "updatedAt": "2026-08-02T18:04:13.171Z",
-        "hlc": "2026-08-02T18:04:13.171Z-0001-chrome_profile_beta",
-        "deviceId": "chrome_profile_beta"
-      }
-    ],
-    [
-      "user_records:cmd_item_001",
-      {
-        "collection": "user_records",
-        "recordId": "cmd_item_001",
-        "payload": {
-          "id": "cmd_item_001",
-          "title": "Command Op from Profile A (Payment)",
-          "price": 500,
-          "category": "COMMAND"
-        },
-        "updatedAt": "2026-08-02T17:59:12.170Z",
-        "hlc": "2026-08-02T17:59:12.170Z-0001-chrome_profile_alpha",
-        "deviceId": "chrome_profile_alpha"
-      }
-    ],
-    [
-      "user_records:event_item_001",
-      {
-        "collection": "user_records",
-        "recordId": "event_item_001",
-        "payload": {
-          "id": "event_item_001",
-          "title": "Event Audit Log from Profile A",
-          "category": "EVENT"
-        },
-        "updatedAt": "2026-08-02T17:59:13.170Z",
-        "hlc": "2026-08-02T17:59:13.170Z-0001-chrome_profile_alpha",
-        "deviceId": "chrome_profile_alpha"
-      }
-    ],
-    [
-      "user_records:shared_commutativity_item",
-      {
-        "collection": "user_records",
-        "recordId": "shared_commutativity_item",
-        "payload": {
-          "id": "shared_commutativity_item",
-          "title": "Profile B Payload (Newer HLC Winner)",
-          "price": 299
-        },
-        "updatedAt": "2026-08-02T18:12:49.962Z",
-        "hlc": "2026-08-02T18:07:49.937Z-0001-chrome_profile_beta",
-        "deviceId": "chrome_profile_beta"
-      }
-    ],
-    [
-      "customers:tmp_cust_1785773117563",
+      "customers:tmp_cust_1785836218174",
       {
         "collection": "customers",
-        "recordId": "tmp_cust_1785773117563",
+        "recordId": "tmp_cust_1785836218174",
         "payload": {
-          "id": "tmp_cust_1785773117563",
+          "id": "tmp_cust_1785836218174",
           "name": "John Doe Evaluator",
           "email": "evaluator@test.org"
         },
-        "updatedAt": "2026-08-03T16:05:17.563Z",
-        "hlc": "2026-08-03T16:05:17.563Z"
+        "updatedAt": "2026-08-04T09:36:58.174Z",
+        "hlc": "2026-08-04T09:36:58.174Z"
       }
     ],
     [
-      "orders:tmp_ord_1785773117563",
+      "orders:tmp_ord_1785836218174",
       {
         "collection": "orders",
-        "recordId": "tmp_ord_1785773117563",
+        "recordId": "tmp_ord_1785836218174",
         "payload": {
-          "id": "tmp_ord_1785773117563",
-          "customerId": "tmp_cust_1785773117563",
+          "id": "tmp_ord_1785836218174",
+          "customerId": "tmp_cust_1785836218174",
           "amount": 250
         },
-        "updatedAt": "2026-08-03T16:05:17.564Z",
-        "hlc": "2026-08-03T16:05:17.564Z"
+        "updatedAt": "2026-08-04T09:36:58.174Z",
+        "hlc": "2026-08-04T09:36:58.174Z"
       }
     ],
     [
-      "customers:tmp_cust_1785773135140",
+      "customers:tmp_cust_1785836453460",
       {
         "collection": "customers",
-        "recordId": "tmp_cust_1785773135140",
+        "recordId": "tmp_cust_1785836453460",
         "payload": {
-          "id": "tmp_cust_1785773135140",
+          "id": "tmp_cust_1785836453460",
           "name": "John Doe Evaluator",
           "email": "evaluator@test.org"
         },
-        "updatedAt": "2026-08-03T16:05:35.140Z",
-        "hlc": "2026-08-03T16:05:35.140Z"
+        "updatedAt": "2026-08-04T09:40:53.460Z",
+        "hlc": "2026-08-04T09:40:53.460Z"
       }
     ],
     [
-      "orders:tmp_ord_1785773135140",
+      "orders:tmp_ord_1785836453460",
       {
         "collection": "orders",
-        "recordId": "tmp_ord_1785773135140",
+        "recordId": "tmp_ord_1785836453460",
         "payload": {
-          "id": "tmp_ord_1785773135140",
-          "customerId": "tmp_cust_1785773135140",
+          "id": "tmp_ord_1785836453460",
+          "customerId": "tmp_cust_1785836453460",
           "amount": 250
         },
-        "updatedAt": "2026-08-03T16:05:35.140Z",
-        "hlc": "2026-08-03T16:05:35.140Z"
+        "updatedAt": "2026-08-04T09:40:53.461Z",
+        "hlc": "2026-08-04T09:40:53.461Z"
+      }
+    ],
+    [
+      "customers:tmp_cust_1785836578954",
+      {
+        "collection": "customers",
+        "recordId": "tmp_cust_1785836578954",
+        "payload": {
+          "id": "tmp_cust_1785836578954",
+          "name": "John Doe Evaluator",
+          "email": "evaluator@test.org"
+        },
+        "updatedAt": "2026-08-04T09:42:58.954Z",
+        "hlc": "2026-08-04T09:42:58.954Z"
+      }
+    ],
+    [
+      "orders:tmp_ord_1785836578954",
+      {
+        "collection": "orders",
+        "recordId": "tmp_ord_1785836578954",
+        "payload": {
+          "id": "tmp_ord_1785836578954",
+          "customerId": "tmp_cust_1785836578954",
+          "amount": 250
+        },
+        "updatedAt": "2026-08-04T09:42:58.955Z",
+        "hlc": "2026-08-04T09:42:58.955Z"
+      }
+    ],
+    [
+      "customers:tmp_cust_1785836882774",
+      {
+        "collection": "customers",
+        "recordId": "tmp_cust_1785836882774",
+        "payload": {
+          "id": "tmp_cust_1785836882774",
+          "name": "John Doe Evaluator",
+          "email": "evaluator@test.org"
+        },
+        "updatedAt": "2026-08-04T09:48:02.774Z",
+        "hlc": "2026-08-04T09:48:02.774Z"
+      }
+    ],
+    [
+      "orders:tmp_ord_1785836882774",
+      {
+        "collection": "orders",
+        "recordId": "tmp_ord_1785836882774",
+        "payload": {
+          "id": "tmp_ord_1785836882774",
+          "customerId": "tmp_cust_1785836882774",
+          "amount": 250
+        },
+        "updatedAt": "2026-08-04T09:48:02.775Z",
+        "hlc": "2026-08-04T09:48:02.775Z"
+      }
+    ],
+    [
+      "customers:tmp_cust_1785836954758",
+      {
+        "collection": "customers",
+        "recordId": "tmp_cust_1785836954758",
+        "payload": {
+          "id": "tmp_cust_1785836954758",
+          "name": "John Doe Evaluator",
+          "email": "evaluator@test.org"
+        },
+        "updatedAt": "2026-08-04T09:49:14.758Z",
+        "hlc": "2026-08-04T09:49:14.758Z"
+      }
+    ],
+    [
+      "orders:tmp_ord_1785836954758",
+      {
+        "collection": "orders",
+        "recordId": "tmp_ord_1785836954758",
+        "payload": {
+          "id": "tmp_ord_1785836954758",
+          "customerId": "tmp_cust_1785836954758",
+          "amount": 250
+        },
+        "updatedAt": "2026-08-04T09:49:14.758Z",
+        "hlc": "2026-08-04T09:49:14.758Z"
       }
     ]
   ],
   "idempotencyKeys": [
     [
-      "election_op_1",
-      "COMMITTED"
-    ],
-    [
-      "storm_op_1785692764549",
+      "op_dev_a_1",
       {
         "status": "SYNCED",
-        "key": "user_records:storm_rec_001"
+        "key": "orders:ord_501"
       }
     ],
     [
-      "storm_op_1785693483975",
+      "op_dev_b_1",
       {
         "status": "SYNCED",
-        "key": "user_records:storm_rec_001",
-        "winner": "client"
+        "key": "orders:ord_501",
+        "winner": "merged"
       }
     ],
     [
-      "storm_op_1785693500245",
+      "op_1785836218174_1",
       {
         "status": "SYNCED",
-        "key": "user_records:storm_rec_001",
-        "winner": "client"
+        "key": "customers:tmp_cust_1785836218174"
       }
     ],
     [
-      "storm_op_1785693519502",
+      "op_1785836218174_2",
       {
         "status": "SYNCED",
-        "key": "user_records:storm_rec_001",
-        "winner": "client"
+        "key": "orders:tmp_ord_1785836218174"
       }
     ],
     [
-      "op_prof_b_state_1",
+      "op_1785836453460_1",
       {
         "status": "SYNCED",
-        "key": "user_records:shared_item_001"
+        "key": "customers:tmp_cust_1785836453460"
       }
     ],
     [
-      "op_prof_b_cmd_1",
+      "op_1785836453461_2",
       {
         "status": "SYNCED",
-        "key": "user_records:cmd_item_002"
+        "key": "orders:tmp_ord_1785836453460"
       }
     ],
     [
-      "op_prof_b_event_1",
+      "op_1785836578954_1",
       {
         "status": "SYNCED",
-        "key": "user_records:event_item_002"
+        "key": "customers:tmp_cust_1785836578954"
       }
     ],
     [
-      "op_prof_a_state_1",
+      "op_1785836578955_2",
       {
         "status": "SYNCED",
-        "key": "user_records:shared_item_001",
-        "winner": "server"
+        "key": "orders:tmp_ord_1785836578954"
       }
     ],
     [
-      "op_prof_a_cmd_1",
+      "op_1785836882774_1",
       {
         "status": "SYNCED",
-        "key": "user_records:cmd_item_001"
+        "key": "customers:tmp_cust_1785836882774"
       }
     ],
     [
-      "op_prof_a_event_1",
+      "op_1785836882775_2",
       {
         "status": "SYNCED",
-        "key": "user_records:event_item_001"
+        "key": "orders:tmp_ord_1785836882774"
       }
     ],
     [
-      "op_comm_b_1",
+      "op_1785836954758_1",
       {
         "status": "SYNCED",
-        "key": "user_records:shared_commutativity_item"
+        "key": "customers:tmp_cust_1785836954758"
       }
     ],
     [
-      "op_comm_a_1",
+      "op_1785836954758_2",
       {
         "status": "SYNCED",
-        "key": "user_records:shared_commutativity_item",
-        "winner": "server"
-      }
-    ],
-    [
-      "op_comm_a_2",
-      {
-        "status": "SYNCED",
-        "key": "user_records:shared_commutativity_item",
-        "winner": "client"
-      }
-    ],
-    [
-      "op_comm_b_2",
-      {
-        "status": "SYNCED",
-        "key": "user_records:shared_commutativity_item",
-        "winner": "client"
-      }
-    ],
-    [
-      "op_1785773117563_1",
-      {
-        "status": "SYNCED",
-        "key": "customers:tmp_cust_1785773117563"
-      }
-    ],
-    [
-      "op_1785773117564_2",
-      {
-        "status": "SYNCED",
-        "key": "orders:tmp_ord_1785773117563"
-      }
-    ],
-    [
-      "op_1785773135140_1",
-      {
-        "status": "SYNCED",
-        "key": "customers:tmp_cust_1785773135140"
-      }
-    ],
-    [
-      "op_1785773135140_2",
-      {
-        "status": "SYNCED",
-        "key": "orders:tmp_ord_1785773135140"
+        "key": "orders:tmp_ord_1785836954758"
       }
     ]
   ]

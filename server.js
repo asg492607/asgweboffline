@@ -164,24 +164,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ==================== REST API ENDPOINTS ====================
 
-// GET App Config by ID
-app.get('/api/v1/config/:appId', (req, res) => {
-  const { appId } = req.params;
-  const config = appsDb.get(appId);
-
-  if (!config) {
-    return res.status(404).json({
-      success: false,
-      error: `App configuration '${appId}' not found. Using default fallback configuration.`,
-      config: appsDb.get('demo-app')
-    });
-  }
-
-  res.json({
-    success: true,
-    config
-  });
-});
+// NOTE: GET /api/v1/config/:appId is defined below at /api/v1/config with dynamic fallback (line ~256).
+// Duplicate removed to avoid shadowing — Express uses the last matching route.
 
 // POST Create/Update App Config
 app.post('/api/v1/apps', (req, res) => {
@@ -332,8 +316,13 @@ app.delete('/api/v1/apps/:appId', (req, res) => {
   const { appId } = req.params;
   const config = appsDb.get(appId);
   if (!config) return res.status(404).json({ success: false, error: `App '${appId}' not found.` });
-  // Remove associated API key
-  if (config.apiKey) apiKeysDb.delete(config.apiKey);
+  // FIX: Remove the hashed API key from apiKeysDb, not the plaintext key
+  if (config.apiKeyHash) {
+    apiKeysDb.delete(config.apiKeyHash);
+  } else if (config.apiKey) {
+    // Legacy: compute hash and remove
+    apiKeysDb.delete(hashApiKey(config.apiKey));
+  }
   appsDb.delete(appId);
   saveAppsPersistence();
   res.json({ success: true, message: `App '${appId}' and its API key have been deleted.` });

@@ -89,6 +89,14 @@
     injectPWAManifest() {
       try {
         if (!document.querySelector('link[rel="manifest"]')) {
+          // FIX: Manifests MUST be same-origin. Only inject if serverUrl is same-origin as the page.
+          // A cross-origin manifest URL is blocked by browsers unconditionally.
+          let serverOrigin = window.location.origin;
+          try { serverOrigin = new URL(this.serverUrl, window.location.href).origin; } catch (e) {}
+          if (serverOrigin !== window.location.origin) {
+            console.log('[ASG Offline SDK] 📱 PWA Manifest skipped: serverUrl is cross-origin. Host /manifest.json at your own domain.');
+            return;
+          }
           const link = document.createElement('link');
           link.rel = 'manifest';
           link.href = `${this.serverUrl}/api/v1/pwa/manifest/${this.appId}`;
@@ -292,7 +300,18 @@
 
     // FIX-03: Provider Adapter Architecture (Firebase / Streaming DBs)
     initProviderAdapters() {
-      const hasFirebase = (typeof window.firebase !== 'undefined') || (typeof window.db !== 'undefined');
+      // FIX: Firebase v9 modular SDK does NOT attach to window.firebase — detect by checking
+      // for common Firebase globals used by both v8 compat and v9 modular SDKs.
+      const hasFirebaseV8Compat = typeof window.firebase !== 'undefined' && typeof window.firebase.firestore === 'function';
+      // v9 modular: apps register themselves on window._firebaseAppCheckState or leave module exports;
+      // the most reliable cross-version signal is the presence of firestore-related globals or scripts.
+      const hasFirebaseV9 = !hasFirebaseV8Compat && (
+        typeof window.__FIREBASE_DEFAULTS__ !== 'undefined' ||
+        document.querySelector('script[src*="firebase"][src*="firestore"]') !== null ||
+        document.querySelector('script[type="module"]') !== null
+      );
+      const hasFirebase = hasFirebaseV8Compat || hasFirebaseV9 || (typeof window.db !== 'undefined');
+
       if (hasFirebase) {
         console.log('[ASG Offline SDK] 🔌 Provider Adapter: Firebase/Firestore environment detected.');
         this.providerAdapter = {
@@ -303,15 +322,26 @@
           },
           async enableNativePersistence() {
             try {
-              if (window.firebase && window.firebase.firestore) {
+              // Firebase v8 compat API
+              if (window.firebase && typeof window.firebase.firestore === 'function') {
                 const firestore = window.firebase.firestore();
                 if (firestore && typeof firestore.enablePersistence === 'function') {
                   await firestore.enablePersistence({ synchronizeTabs: true });
-                  console.log('[ASG Offline SDK] 🔌 Provider Adapter: Native Firestore offline persistence enabled.');
+                  console.log('[ASG Offline SDK] 🔌 Provider Adapter: Native Firestore offline persistence enabled (v8 compat).');
+                  return;
                 }
               }
+              // Firebase v9 modular API — enableIndexedDbPersistence / initializeFirestore
+              // v9 persistence is configured at initialization time; we log that it should be set there.
+              console.log('[ASG Offline SDK] 🔌 Provider Adapter: Firebase v9 detected. Ensure offline persistence is enabled via initializeFirestore({ localCache: persistentLocalCache() }) in your app init.');
             } catch (err) {
-              console.log('[ASG Offline SDK] 🔌 Provider Adapter info:', err.message);
+              if (err.code === 'failed-precondition') {
+                console.warn('[ASG Offline SDK] 🔌 Firestore persistence disabled: multiple tabs open. Use synchronizeTabs:true or persistentLocalCache multitab mode.');
+              } else if (err.code === 'unimplemented') {
+                console.warn('[ASG Offline SDK] 🔌 Firestore persistence not supported in this browser environment.');
+              } else {
+                console.log('[ASG Offline SDK] 🔌 Provider Adapter info:', err.message);
+              }
             }
           }
         };
@@ -323,25 +353,55 @@
 
     // FIX-04: Offline Session Continuity (Local Authorization Only)
     initOfflineSessionContinuity() {
-      if (window.firebase && window.firebase.auth) {
+      const self = this;
+      function _recordSession(user) {
+        if (!user) return;
+        const sessionRecord = {
+          uid: user.uid,
+          email: user.email || 'user@offline',
+          displayName: user.displayName || 'Offline User',
+          verifiedOnlineAt: new Date().toISOString(),
+          isOfflineAuthorized: true
+        };
         try {
-          window.firebase.auth().onAuthStateChanged((user) => {
-            if (user) {
-              const sessionRecord = {
-                uid: user.uid,
-                email: user.email || 'user@offline',
-                displayName: user.displayName || 'Offline User',
-                verifiedOnlineAt: new Date().toISOString(),
-                isOfflineAuthorized: true
-              };
-              try {
-                localStorage.setItem('ASG_OFFLINE_AUTHORIZED_USER', JSON.stringify(sessionRecord));
-              } catch (e) {}
-              console.log(`[ASG Offline SDK] 🔒 Offline Session Continuity: Verified user session recorded locally for '${sessionRecord.email}'`);
-            }
-          });
+          localStorage.setItem('ASG_OFFLINE_AUTHORIZED_USER', JSON.stringify(sessionRecord));
         } catch (e) {}
+        console.log(`[ASG Offline SDK] 🔒 Offline Session Continuity: Verified user session recorded locally for '${sessionRecord.email}'`);
       }
+
+      // FIX: Support both Firebase v8 compat (window.firebase.auth) and v9 modular (getAuth)
+      try {
+        // v8 compat
+        if (window.firebase && typeof window.firebase.auth === 'function') {
+          window.firebase.auth().onAuthStateChanged(_recordSession);
+          return;
+        }
+      } catch (e) {}
+
+      // v9 modular: listen for a custom event or poll for auth state.
+      // Apps using v9 modular should call: window.ASGOffline.recordOfflineUser(user) after onAuthStateChanged.
+      // We also attempt to detect if getAuth is available globally (some setups expose it).
+      try {
+        if (typeof window.getAuth === 'function') {
+          const auth = window.getAuth();
+          if (auth && typeof window.onAuthStateChanged === 'function') {
+            window.onAuthStateChanged(auth, _recordSession);
+            return;
+          }
+        }
+      } catch (e) {}
+
+      // Expose a manual hook for v9 modular apps
+      this._recordOfflineUserHook = _recordSession;
+    }
+
+    /**
+     * Manual hook for Firebase v9 modular apps.
+     * Call this from your onAuthStateChanged callback to record session for offline use.
+     * Example: onAuthStateChanged(auth, (user) => window.ASGOffline.recordOfflineUser(user));
+     */
+    recordOfflineUser(user) {
+      if (this._recordOfflineUserHook) this._recordOfflineUserHook(user);
     }
 
     getLocalSession() {
@@ -1669,7 +1729,20 @@
       // 1. Local Database Write First (Instant User Experience)
       if (action === 'DELETE') {
         if (recordId) {
-          await this.dbApi.delete(recordId);
+          // FIX: dbApi.delete() expects the IDB record primary key (autoincrement numeric id),
+          // not a business recordId string. Search by recordId to find the actual IDB key.
+          try {
+            const allRecords = await this.dbApi.getAll(collection);
+            const target = allRecords.find(r => String(r.id) === String(recordId) || String(r.recordId) === String(recordId));
+            if (target && target.id !== undefined) {
+              await this.dbApi.delete(target.id);
+            } else {
+              // Attempt direct delete in case recordId happens to match the numeric key
+              await this.dbApi.delete(recordId);
+            }
+          } catch (e) {
+            console.warn('[POSA Engine] Local DELETE failed for recordId:', recordId, e);
+          }
         }
       } else {
         const payloadData = recordId ? { id: recordId, ...opMetaData.payload } : opMetaData.payload;

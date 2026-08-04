@@ -591,10 +591,29 @@ self.addEventListener('message', async (event) => {
   if (!data) return;
 
   if (data.type === 'SET_CONFIG') {
-    if (data.precacheUrls) DEFAULT_PRECACHE = data.precacheUrls;
     if (data.cacheStrategy) DEFAULT_STRATEGY = data.cacheStrategy;
     if (data.offlineFallbackHtml) OFFLINE_FALLBACK_HTML = data.offlineFallbackHtml;
-    console.log('[ASG ServiceWorker] Config updated via Client SDK');
+
+    if (data.precacheUrls && Array.isArray(data.precacheUrls)) {
+      // FIX: Actually fetch and cache the new URLs — don't just update the array.
+      // The install-time precache only runs once; SET_CONFIG is the runtime hook to cache
+      // app-specific assets that were not known at SW install time.
+      const newUrls = data.precacheUrls.filter(u => !DEFAULT_PRECACHE.includes(u));
+      DEFAULT_PRECACHE = data.precacheUrls;
+      if (newUrls.length > 0) {
+        caches.open(CACHE_NAME).then(async (cache) => {
+          console.log('[ASG ServiceWorker] Pre-caching', newUrls.length, 'app-specific URLs from SET_CONFIG:', newUrls);
+          for (const url of newUrls) {
+            try {
+              await cache.add(url);
+            } catch (err) {
+              console.warn(`[ASG ServiceWorker] Could not precache SET_CONFIG item: ${url}`, err.message);
+            }
+          }
+        }).catch(() => {});
+      }
+    }
+    console.log('[ASG ServiceWorker] Config updated via Client SDK (strategy:', DEFAULT_STRATEGY, ')');
   }
 
   if (data.type === 'CLEAR_CACHE') {
