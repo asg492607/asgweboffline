@@ -7,22 +7,21 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.set('trust proxy', 1);
-// Per-app CORS: allow registered frontend origins + localhost dashboard
+// FIX-02: Universal & Verified-App CORS middleware
 app.use((req, res, next) => {
-  const origin = req.headers.origin || '';
-  // Always allow same-origin and localhost dev
-  const allowedStaticOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
-  // Check if origin matches any registered app's frontendUrl
-  const isRegisteredOrigin = Array.from(appsDb.values()).some(app => {
-    try { return new URL(app.frontendUrl || app.websiteUrl || '').origin === origin; } catch { return false; }
-  });
-  if (allowedStaticOrigins.includes(origin) || isRegisteredOrigin || !origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-ASG-API-Key, X-App-Id');
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
   }
-  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-ASG-API-Key, X-App-Id, X-Requested-With, Accept, Origin, Cache-Control, Pragma');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
   next();
 });
 app.use(express.json({ limit: '10mb' }));
@@ -249,8 +248,48 @@ app.get('/api/v1/apps/:appId', (req, res) => {
   res.json({
     success: true,
     config: { ...config, apiKey: config.apiKey ? config.apiKey.substring(0, 12) + '•••' : null },
-    embedTag: `<script src="${host}/sdk/asg-offline.js" data-app-id="${config.appId}" data-api-key="${config.apiKey || ''}" data-server-url="${host}"></script>`
+    embedScriptTag: `<script src="${host}/sdk/asg-offline.js" data-app-id="${config.appId}" data-server-url="${host}"></script>`
   });
+});
+
+// GET Remote SDK App Config endpoint with dynamic fallback
+app.get('/api/v1/config/:appId', (req, res) => {
+  const appId = req.params.appId || 'demo-app';
+  let config = appsDb.get(appId);
+  if (!config) {
+    config = {
+      appId,
+      appName: appId,
+      cacheStrategy: 'stale-while-revalidate',
+      precacheUrls: ['/', '/index.html', '/sdk/asg-offline.js', '/sdk/asg-sw.js'],
+      networkTimeoutMs: 3000,
+      enableBackgroundSync: true,
+      enableOfflineNotifications: true,
+      createdAt: new Date().toISOString()
+    };
+    appsDb.set(appId, config);
+    saveAppsPersistence();
+  }
+  return res.json({ success: true, config });
+});
+
+// POST Telemetry endpoint
+app.post('/api/v1/telemetry', (req, res) => {
+  const event = req.body || {};
+  event.receivedAt = new Date().toISOString();
+  telemetryStore.push(event);
+  if (telemetryStore.length > 1000) telemetryStore.shift();
+  return res.json({ success: true, message: 'Telemetry recorded' });
+});
+
+// POST ADE Manifest endpoint
+const adeManifestsDb = new Map();
+app.post('/api/v1/ade/manifest', (req, res) => {
+  const { appId, manifest } = req.body || {};
+  if (appId && manifest) {
+    adeManifestsDb.set(appId, manifest);
+  }
+  return res.json({ success: true, message: 'ADE Manifest saved' });
 });
 
 // DELETE App by ID

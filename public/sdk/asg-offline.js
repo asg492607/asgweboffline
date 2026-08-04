@@ -62,21 +62,27 @@
       // 3. Initialize IndexedDB for offline queue
       await this.initIndexedDB();
 
-      // 4. Phase A: Start Auto-Discovery Engine (ADE)
+      // 4. FIX-03: Provider Adapter Architecture (Firestore/Streaming DBs)
+      this.initProviderAdapters();
+
+      // 5. FIX-04: Offline Session Continuity
+      this.initOfflineSessionContinuity();
+
+      // 6. Phase A: Start Auto-Discovery Engine (ADE)
       this.startAutoDiscovery();
 
-      // 5. Trigger cold-start background sync if online
+      // 7. Trigger cold-start background sync if online
       if (this.isOnline) {
         this.processOfflineQueue();
       }
 
-      // 6. Attach online/offline event listeners
+      // 8. Attach online/offline event listeners
       this.setupNetworkListeners();
 
-      // 7. Render toast notification container
+      // 9. Render toast notification container
       this.renderNotificationToast();
 
-      // 8. Log telemetry
+      // 10. Log telemetry
       this.sendTelemetry('SDK_INITIALIZED', { isOnline: this.isOnline });
     }
 
@@ -104,40 +110,60 @@
         return;
       }
 
+      const currentOrigin = window.location.origin;
+      let serverOrigin = currentOrigin;
       try {
-        const swUrl = `${this.serverUrl}/sdk/asg-sw.js`;
+        serverOrigin = new URL(this.serverUrl, currentOrigin).origin;
+      } catch (e) {}
+
+      const isCrossOrigin = serverOrigin !== currentOrigin;
+      // FIX-01: Same-Origin Service Worker Bootstrap
+      // Cross-origin script registration is strictly forbidden by browser security policies.
+      const swCandidates = isCrossOrigin
+        ? ['/asg-sw.js', './asg-sw.js']
+        : [`${this.serverUrl}/sdk/asg-sw.js`, '/asg-sw.js', './asg-sw.js'];
+
+      let registered = false;
+      for (const swUrl of swCandidates) {
         try {
-          this.swRegistration = await navigator.serviceWorker.register(swUrl, { scope: '/' });
-        } catch (scopeErr) {
-          console.warn('[ASG Offline SDK] Root scope registration failed, trying default scope:', scopeErr);
-          this.swRegistration = await navigator.serviceWorker.register(swUrl);
-        }
-        console.log('[ASG Offline SDK] Service Worker registered successfully scope:', this.swRegistration.scope);
-
-        // Send loaded config to SW engine when controller or active SW is ready
-        const sendConfig = (controller) => {
-          if (controller && this.config) {
-            controller.postMessage({
-              type: 'SET_CONFIG',
-              precacheUrls: this.config.precacheUrls,
-              cacheStrategy: this.config.cacheStrategy,
-              offlineFallbackHtml: this.config.offlineFallbackHtml
-            });
+          try {
+            this.swRegistration = await navigator.serviceWorker.register(swUrl, { scope: '/' });
+          } catch (scopeErr) {
+            this.swRegistration = await navigator.serviceWorker.register(swUrl);
           }
-        };
-
-        if (navigator.serviceWorker.controller) {
-          sendConfig(navigator.serviceWorker.controller);
+          console.log('[ASG Offline SDK] Service Worker registered successfully from:', swUrl, 'scope:', this.swRegistration.scope);
+          registered = true;
+          break;
+        } catch (err) {
+          console.warn(`[ASG Offline SDK] Same-origin SW candidate '${swUrl}' registration attempt:`, err.message);
         }
-
-        navigator.serviceWorker.ready.then((reg) => {
-          if (reg && reg.active) {
-            sendConfig(reg.active);
-          }
-        });
-      } catch (err) {
-        console.error('[ASG Offline SDK] Service Worker registration failed:', err);
       }
+
+      if (!registered) {
+        console.warn(`[ASG Offline SDK] ℹ️ Cross-origin integration on '${currentOrigin}': Host '/asg-sw.js' at your root domain to enable Service Worker offline caching.`);
+        return;
+      }
+
+      const sendConfig = (controller) => {
+        if (controller && this.config) {
+          controller.postMessage({
+            type: 'SET_CONFIG',
+            precacheUrls: this.config.precacheUrls,
+            cacheStrategy: this.config.cacheStrategy,
+            offlineFallbackHtml: this.config.offlineFallbackHtml
+          });
+        }
+      };
+
+      if (navigator.serviceWorker.controller) {
+        sendConfig(navigator.serviceWorker.controller);
+      }
+
+      navigator.serviceWorker.ready.then((reg) => {
+        if (reg && reg.active) {
+          sendConfig(reg.active);
+        }
+      });
     }
 
     async requestPersistentStorage() {
@@ -233,6 +259,68 @@
           resolve();
         }
       });
+    }
+
+    // FIX-03: Provider Adapter Architecture (Firebase / Streaming DBs)
+    initProviderAdapters() {
+      const hasFirebase = (typeof window.firebase !== 'undefined') || (typeof window.db !== 'undefined');
+      if (hasFirebase) {
+        console.log('[ASG Offline SDK] 🔌 Provider Adapter: Firebase/Firestore environment detected.');
+        this.providerAdapter = {
+          type: 'FIREBASE_FIRESTORE',
+          isStreamingTransport(urlStr) {
+            const u = (urlStr || '').toLowerCase();
+            return u.includes('listen/channel') || u.includes('google.firestore.v1.firestore/listen') || u.includes('gsessionid') || u.includes('ver=8') || u.includes('rid=rpc');
+          },
+          async enableNativePersistence() {
+            try {
+              if (window.firebase && window.firebase.firestore) {
+                const firestore = window.firebase.firestore();
+                if (firestore && typeof firestore.enablePersistence === 'function') {
+                  await firestore.enablePersistence({ synchronizeTabs: true });
+                  console.log('[ASG Offline SDK] 🔌 Provider Adapter: Native Firestore offline persistence enabled.');
+                }
+              }
+            } catch (err) {
+              console.log('[ASG Offline SDK] 🔌 Provider Adapter info:', err.message);
+            }
+          }
+        };
+        this.providerAdapter.enableNativePersistence();
+      } else {
+        this.providerAdapter = { type: 'GENERIC_REST', isStreamingTransport: () => false };
+      }
+    }
+
+    // FIX-04: Offline Session Continuity (Local Authorization Only)
+    initOfflineSessionContinuity() {
+      if (window.firebase && window.firebase.auth) {
+        try {
+          window.firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+              const sessionRecord = {
+                uid: user.uid,
+                email: user.email || 'user@offline',
+                displayName: user.displayName || 'Offline User',
+                verifiedOnlineAt: new Date().toISOString(),
+                isOfflineAuthorized: true
+              };
+              try {
+                localStorage.setItem('ASG_OFFLINE_AUTHORIZED_USER', JSON.stringify(sessionRecord));
+              } catch (e) {}
+              console.log(`[ASG Offline SDK] 🔒 Offline Session Continuity: Verified user session recorded locally for '${sessionRecord.email}'`);
+            }
+          });
+        } catch (e) {}
+      }
+    }
+
+    getLocalSession() {
+      try {
+        const raw = localStorage.getItem('ASG_OFFLINE_AUTHORIZED_USER');
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return null;
     }
 
     attachDbHelpers() {

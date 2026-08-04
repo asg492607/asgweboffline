@@ -386,10 +386,9 @@ function isApiRequest(url, request) {
     return true;
   }
 
-  // 2. Firebase, Firestore, Google Cloud, Supabase, Appwrite API domains
-  if (host.includes('firestore.googleapis.com') ||
-      host.includes('identitytoolkit.googleapis.com') ||
-      host.includes('firebase') ||
+  // 2. Firebase Auth, Google Identity, Supabase, Appwrite API domains (excluding Firestore DB transport handled by Provider Adapter)
+  if (host.includes('identitytoolkit.googleapis.com') ||
+      host.includes('securetoken.googleapis.com') ||
       host.includes('supabase') ||
       host.includes('appwrite')) {
     return true;
@@ -501,6 +500,20 @@ async function handleApiRequest(request) {
   }
 }
 
+// Helper: Check if request is a provider database transport (e.g. Firestore WebChannel, REST, or streaming endpoints)
+function isProviderDatabaseTransport(url) {
+  const host = url.hostname.toLowerCase();
+  const path = url.pathname.toLowerCase();
+  const search = url.search.toLowerCase();
+  return host.includes('firestore.googleapis.com') ||
+         path.includes('listen/channel') ||
+         path.includes('google.firestore.v1.firestore/listen') ||
+         search.includes('gsessionid') ||
+         search.includes('ver=8') ||
+         search.includes('rid=rpc') ||
+         path.includes('/$rpc/google.');
+}
+
 // Intercept Fetch Requests
 self.addEventListener('fetch', (event) => {
   let request = event.request;
@@ -508,6 +521,12 @@ self.addEventListener('fetch', (event) => {
 
   // Skip chrome-extension or invalid schemes
   if (url.protocol.startsWith('chrome-extension')) {
+    return;
+  }
+
+  // Provider database transport bypass (e.g. Firestore WebChannel / REST streams)
+  // Allow provider DB requests to bypass SW JSON synthesis so native provider SDK controls offline state & persistence
+  if (isProviderDatabaseTransport(url)) {
     return;
   }
 
