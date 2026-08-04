@@ -292,6 +292,41 @@ app.post('/api/v1/ade/manifest', (req, res) => {
   return res.json({ success: true, message: 'ADE Manifest saved' });
 });
 
+// GET Google PWA Web App Manifest endpoint
+app.get('/api/v1/pwa/manifest/:appId', (req, res) => {
+  const appId = req.params.appId || 'demo-app';
+  const appConfig = appsDb.get(appId) || { appId, appName: appId };
+  const host = process.env.RENDER_EXTERNAL_URL || `${req.protocol}://${req.get('host')}`;
+
+  const manifest = {
+    name: appConfig.appName || appId,
+    short_name: (appConfig.appName || appId).substring(0, 12),
+    description: `${appConfig.appName || appId} — Enhanced with ASG Offline Web Service Engine`,
+    start_url: '/',
+    display: 'standalone',
+    orientation: 'any',
+    background_color: appConfig.backgroundColor || '#0f172a',
+    theme_color: appConfig.themeColor || '#6366f1',
+    icons: [
+      {
+        src: `${host}/icons/icon-192.png`,
+        sizes: '192x192',
+        type: 'image/png',
+        purpose: 'any maskable'
+      },
+      {
+        src: `${host}/icons/icon-512.png`,
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'any maskable'
+      }
+    ]
+  };
+
+  res.setHeader('Content-Type', 'application/manifest+json');
+  return res.json(manifest);
+});
+
 // DELETE App by ID
 app.delete('/api/v1/apps/:appId', (req, res) => {
   const { appId } = req.params;

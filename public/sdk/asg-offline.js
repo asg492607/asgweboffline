@@ -79,11 +79,23 @@
       // 8. Attach online/offline event listeners
       this.setupNetworkListeners();
 
-      // 9. Render toast notification container
-      this.renderNotificationToast();
+      // 10. Auto-inject Google PWA Web App Manifest
+      this.injectPWAManifest();
 
-      // 10. Log telemetry
+      // 11. Log telemetry
       this.sendTelemetry('SDK_INITIALIZED', { isOnline: this.isOnline });
+    }
+
+    injectPWAManifest() {
+      try {
+        if (!document.querySelector('link[rel="manifest"]')) {
+          const link = document.createElement('link');
+          link.rel = 'manifest';
+          link.href = `${this.serverUrl}/api/v1/pwa/manifest/${this.appId}`;
+          document.head.appendChild(link);
+          console.log('[ASG Offline SDK] 📱 Auto-injected Google PWA Web App Manifest:', link.href);
+        }
+      } catch (e) {}
     }
 
     async fetchRemoteConfig() {
