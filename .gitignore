@@ -1,3 +1,9 @@
 node_modules/
 *.log
 .DS_Store
+*.tmp
+*.db
+*.db-journal
+posa_processed_ops_store.json
+posa_records_store.json
+posa_unified_store.json.tmp

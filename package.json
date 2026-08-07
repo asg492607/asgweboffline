@@ -8,7 +8,8 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node scratch/run_all_tests.js"
   },
   "keywords": [
     "pwa",

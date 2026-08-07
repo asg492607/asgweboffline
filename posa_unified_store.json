@@ -1,267 +1,2271 @@
 {
   "formatVersion": 1,
-  "generation": 8,
-  "createdAt": "2026-08-04T09:49:14.759Z",
-  "checksum": "977e45dd3f2e4b36c9a020a2e70245953cfa3c1dccf8664fc83acaf20489ba14",
+  "generation": 1065,
+  "createdAt": "2026-08-07T13:17:39.863Z",
+  "checksum": "e2662b7d5feec0daa090e1b038c2f5d79e01236263f1f2d304952f53cdb0558b",
   "records": [
     [
-      "orders:ord_501",
+      "user_records:election_rec_1",
       {
-        "collection": "orders",
-        "recordId": "ord_501",
+        "collection": "user_records",
+        "recordId": "election_rec_1",
         "payload": {
-          "id": "ord_501",
-          "item": "Laptop",
-          "price": 1200,
-          "notes": "Dev B Overwrite Notes",
-          "priority": "EXPEDITED",
-          "_mergedAt": "2026-08-04T09:36:48.948Z"
+          "id": "election_rec_1",
+          "title": "Promoted from .tmp"
         },
-        "updatedAt": "2026-08-04T09:36:48.948Z",
-        "hlc": "2026-08-04T09:36:48.980Z-0001-dev_beta",
-        "deviceId": "dev_beta"
+        "hlc": "2026-08-02T17:44:00.000Z-0001-dev_election"
       }
     ],
     [
-      "inventory:inv_10",
+      "user_records:corrupt_rec_1",
       {
-        "collection": "inventory",
-        "recordId": "inv_10",
+        "collection": "user_records",
+        "recordId": "corrupt_rec_1",
         "payload": {
-          "id": "inv_10",
-          "title": "Offline Subnet Scanner",
-          "qty": 50
+          "id": "corrupt_rec_1",
+          "title": "SHA-256 Monotonic Test",
+          "amount": 888
         },
-        "updatedAt": "2026-08-04T09:36:48.952Z",
-        "hlc": "2026-08-04T09:36:48.952Z-0001-peer_node_777",
-        "deviceId": "peer_node_777"
+        "updatedAt": "2026-08-07T13:17:21.210Z",
+        "hlc": "2026-08-07T13:17:21.210Z-0001-dev_corrupt_test",
+        "deviceId": "dev_corrupt_test"
       }
     ],
     [
-      "customers:tmp_cust_1785836218174",
+      "user_records:boundary_rec_0",
       {
-        "collection": "customers",
-        "recordId": "tmp_cust_1785836218174",
+        "collection": "user_records",
+        "recordId": "boundary_rec_0",
         "payload": {
-          "id": "tmp_cust_1785836218174",
-          "name": "John Doe Evaluator",
-          "email": "evaluator@test.org"
+          "id": "boundary_rec_0",
+          "title": "Kill-Point BEFORE_TRANSACTION",
+          "amount": 500
         },
-        "updatedAt": "2026-08-04T09:36:58.174Z",
-        "hlc": "2026-08-04T09:36:58.174Z"
+        "updatedAt": "2026-08-07T13:17:25.387Z",
+        "hlc": "2026-08-07T13:17:25.388Z-0001-dev_boundary_tester",
+        "deviceId": "dev_boundary_tester"
       }
     ],
     [
-      "orders:tmp_ord_1785836218174",
+      "user_records:boundary_rec_1",
       {
-        "collection": "orders",
-        "recordId": "tmp_ord_1785836218174",
+        "collection": "user_records",
+        "recordId": "boundary_rec_1",
         "payload": {
-          "id": "tmp_ord_1785836218174",
-          "customerId": "tmp_cust_1785836218174",
-          "amount": 250
+          "id": "boundary_rec_1",
+          "title": "Kill-Point DURING_MUTATION",
+          "amount": 500
         },
-        "updatedAt": "2026-08-04T09:36:58.174Z",
-        "hlc": "2026-08-04T09:36:58.174Z"
+        "updatedAt": "2026-08-07T13:17:27.955Z",
+        "hlc": "2026-08-07T13:17:27.955Z-0001-dev_boundary_tester",
+        "deviceId": "dev_boundary_tester"
       }
     ],
     [
-      "customers:tmp_cust_1785836453460",
+      "user_records:boundary_rec_2",
       {
-        "collection": "customers",
-        "recordId": "tmp_cust_1785836453460",
+        "collection": "user_records",
+        "recordId": "boundary_rec_2",
         "payload": {
-          "id": "tmp_cust_1785836453460",
-          "name": "John Doe Evaluator",
-          "email": "evaluator@test.org"
+          "id": "boundary_rec_2",
+          "title": "Kill-Point IMMEDIATELY_AFTER_ATOMIC_WRITE",
+          "amount": 500
         },
-        "updatedAt": "2026-08-04T09:40:53.460Z",
-        "hlc": "2026-08-04T09:40:53.460Z"
+        "updatedAt": "2026-08-07T13:17:30.461Z",
+        "hlc": "2026-08-07T13:17:30.461Z-0001-dev_boundary_tester",
+        "deviceId": "dev_boundary_tester"
       }
     ],
     [
-      "orders:tmp_ord_1785836453460",
+      "user_records:boundary_rec_3",
       {
-        "collection": "orders",
-        "recordId": "tmp_ord_1785836453460",
+        "collection": "user_records",
+        "recordId": "boundary_rec_3",
         "payload": {
-          "id": "tmp_ord_1785836453460",
-          "customerId": "tmp_cust_1785836453460",
-          "amount": 250
+          "id": "boundary_rec_3",
+          "title": "Kill-Point DURING_HTTP_ACK",
+          "amount": 500
         },
-        "updatedAt": "2026-08-04T09:40:53.461Z",
-        "hlc": "2026-08-04T09:40:53.461Z"
+        "updatedAt": "2026-08-07T13:17:32.932Z",
+        "hlc": "2026-08-07T13:17:32.932Z-0001-dev_boundary_tester",
+        "deviceId": "dev_boundary_tester"
       }
     ],
     [
-      "customers:tmp_cust_1785836578954",
+      "user_records:storm_rec_001",
       {
-        "collection": "customers",
-        "recordId": "tmp_cust_1785836578954",
+        "collection": "user_records",
+        "recordId": "storm_rec_001",
         "payload": {
-          "id": "tmp_cust_1785836578954",
-          "name": "John Doe Evaluator",
-          "email": "evaluator@test.org"
+          "id": "storm_rec_001",
+          "title": "Storm Invariant Test",
+          "balance": 50000
         },
-        "updatedAt": "2026-08-04T09:42:58.954Z",
-        "hlc": "2026-08-04T09:42:58.954Z"
+        "updatedAt": "2026-08-07T13:17:35.531Z",
+        "hlc": "2026-08-07T13:17:35.532Z-0001-dev_storm_tester",
+        "deviceId": "dev_storm_tester"
       }
     ],
     [
-      "orders:tmp_ord_1785836578954",
+      "user_records:user_rec_0",
       {
-        "collection": "orders",
-        "recordId": "tmp_ord_1785836578954",
+        "collection": "user_records",
+        "recordId": "user_rec_0",
         "payload": {
-          "id": "tmp_ord_1785836578954",
-          "customerId": "tmp_cust_1785836578954",
-          "amount": 250
+          "id": "user_rec_0",
+          "title": "EVENT Op #130",
+          "price": 280,
+          "category": "EVENT",
+          "meta": {
+            "seq": 130,
+            "device": "dev_profile_alpha_1"
+          }
         },
-        "updatedAt": "2026-08-04T09:42:58.955Z",
-        "hlc": "2026-08-04T09:42:58.955Z"
+        "updatedAt": "2026-08-07T13:17:37.587Z",
+        "hlc": "2026-08-07T12:17:38.872Z-0001-dev_profile_alpha_1",
+        "deviceId": "dev_profile_alpha_1"
       }
     ],
     [
-      "customers:tmp_cust_1785836882774",
+      "user_records:user_rec_1",
       {
-        "collection": "customers",
-        "recordId": "tmp_cust_1785836882774",
+        "collection": "user_records",
+        "recordId": "user_rec_1",
         "payload": {
-          "id": "tmp_cust_1785836882774",
-          "name": "John Doe Evaluator",
-          "email": "evaluator@test.org"
+          "id": "user_rec_1",
+          "title": "EVENT Op #131",
+          "price": 281,
+          "category": "EVENT",
+          "meta": {
+            "seq": 131,
+            "device": "dev_profile_alpha_1"
+          }
         },
-        "updatedAt": "2026-08-04T09:48:02.774Z",
-        "hlc": "2026-08-04T09:48:02.774Z"
+        "updatedAt": "2026-08-07T13:17:37.587Z",
+        "hlc": "2026-08-07T12:17:38.882Z-0001-dev_profile_alpha_1",
+        "deviceId": "dev_profile_alpha_1"
       }
     ],
     [
-      "orders:tmp_ord_1785836882774",
+      "user_records:user_rec_2",
       {
-        "collection": "orders",
-        "recordId": "tmp_ord_1785836882774",
+        "collection": "user_records",
+        "recordId": "user_rec_2",
         "payload": {
-          "id": "tmp_ord_1785836882774",
-          "customerId": "tmp_cust_1785836882774",
-          "amount": 250
+          "id": "user_rec_2",
+          "title": "EVENT Op #132",
+          "price": 282,
+          "category": "EVENT",
+          "meta": {
+            "seq": 132,
+            "device": "dev_profile_alpha_1"
+          }
         },
-        "updatedAt": "2026-08-04T09:48:02.775Z",
-        "hlc": "2026-08-04T09:48:02.775Z"
+        "updatedAt": "2026-08-07T13:17:37.587Z",
+        "hlc": "2026-08-07T12:17:38.892Z-0001-dev_profile_alpha_1",
+        "deviceId": "dev_profile_alpha_1"
       }
     ],
     [
-      "customers:tmp_cust_1785836954758",
+      "user_records:user_rec_3",
       {
-        "collection": "customers",
-        "recordId": "tmp_cust_1785836954758",
+        "collection": "user_records",
+        "recordId": "user_rec_3",
         "payload": {
-          "id": "tmp_cust_1785836954758",
-          "name": "John Doe Evaluator",
-          "email": "evaluator@test.org"
+          "id": "user_rec_3",
+          "title": "EVENT Op #133",
+          "price": 283,
+          "category": "EVENT",
+          "meta": {
+            "seq": 133,
+            "device": "dev_profile_alpha_1"
+          }
         },
-        "updatedAt": "2026-08-04T09:49:14.758Z",
-        "hlc": "2026-08-04T09:49:14.758Z"
+        "updatedAt": "2026-08-07T13:17:37.587Z",
+        "hlc": "2026-08-07T12:17:38.902Z-0001-dev_profile_alpha_1",
+        "deviceId": "dev_profile_alpha_1"
       }
     ],
     [
-      "orders:tmp_ord_1785836954758",
+      "user_records:user_rec_5",
       {
-        "collection": "orders",
-        "recordId": "tmp_ord_1785836954758",
+        "collection": "user_records",
+        "recordId": "user_rec_5",
         "payload": {
-          "id": "tmp_ord_1785836954758",
-          "customerId": "tmp_cust_1785836954758",
-          "amount": 250
+          "id": "user_rec_5",
+          "title": "EVENT Op #135",
+          "price": 285,
+          "category": "EVENT",
+          "meta": {
+            "seq": 135,
+            "device": "dev_profile_alpha_1"
+          }
         },
-        "updatedAt": "2026-08-04T09:49:14.758Z",
-        "hlc": "2026-08-04T09:49:14.758Z"
+        "updatedAt": "2026-08-07T13:17:37.587Z",
+        "hlc": "2026-08-07T12:17:38.922Z-0001-dev_profile_alpha_1",
+        "deviceId": "dev_profile_alpha_1"
+      }
+    ],
+    [
+      "user_records:user_rec_6",
+      {
+        "collection": "user_records",
+        "recordId": "user_rec_6",
+        "payload": {
+          "id": "user_rec_6",
+          "title": "EVENT Op #136",
+          "price": 286,
+          "category": "EVENT",
+          "meta": {
+            "seq": 136,
+            "device": "dev_profile_alpha_1"
+          }
+        },
+        "updatedAt": "2026-08-07T13:17:37.587Z",
+        "hlc": "2026-08-07T12:17:38.932Z-0001-dev_profile_alpha_1",
+        "deviceId": "dev_profile_alpha_1"
+      }
+    ],
+    [
+      "user_records:user_rec_7",
+      {
+        "collection": "user_records",
+        "recordId": "user_rec_7",
+        "payload": {
+          "id": "user_rec_7",
+          "title": "EVENT Op #137",
+          "price": 287,
+          "category": "EVENT",
+          "meta": {
+            "seq": 137,
+            "device": "dev_profile_alpha_1"
+          }
+        },
+        "updatedAt": "2026-08-07T13:17:37.587Z",
+        "hlc": "2026-08-07T12:17:38.942Z-0001-dev_profile_alpha_1",
+        "deviceId": "dev_profile_alpha_1"
+      }
+    ],
+    [
+      "user_records:user_rec_8",
+      {
+        "collection": "user_records",
+        "recordId": "user_rec_8",
+        "payload": {
+          "id": "user_rec_8",
+          "title": "EVENT Op #138",
+          "price": 288,
+          "category": "EVENT",
+          "meta": {
+            "seq": 138,
+            "device": "dev_profile_alpha_1"
+          }
+        },
+        "updatedAt": "2026-08-07T13:17:37.587Z",
+        "hlc": "2026-08-07T12:17:38.952Z-0001-dev_profile_alpha_1",
+        "deviceId": "dev_profile_alpha_1"
+      }
+    ],
+    [
+      "user_records:user_rec_9",
+      {
+        "collection": "user_records",
+        "recordId": "user_rec_9",
+        "payload": {
+          "id": "user_rec_9",
+          "title": "EVENT Op #139",
+          "price": 289,
+          "category": "EVENT",
+          "meta": {
+            "seq": 139,
+            "device": "dev_profile_alpha_1"
+          }
+        },
+        "updatedAt": "2026-08-07T13:17:37.587Z",
+        "hlc": "2026-08-07T12:17:38.962Z-0001-dev_profile_alpha_1",
+        "deviceId": "dev_profile_alpha_1"
+      }
+    ],
+    [
+      "user_records:shared_item_001",
+      {
+        "collection": "user_records",
+        "recordId": "shared_item_001",
+        "payload": {
+          "id": "shared_item_001",
+          "title": "State Edit by Profile B (NEWER HLC WINNER)",
+          "price": 299,
+          "category": "STATE"
+        },
+        "updatedAt": "2026-08-07T13:17:37.894Z",
+        "hlc": "2026-08-07T13:07:37.888Z-0001-chrome_profile_alpha",
+        "deviceId": "chrome_profile_alpha"
+      }
+    ],
+    [
+      "user_records:cmd_item_002",
+      {
+        "collection": "user_records",
+        "recordId": "cmd_item_002",
+        "payload": {
+          "id": "cmd_item_002",
+          "title": "Command Op from Profile B (Order Placement)",
+          "price": 900,
+          "category": "COMMAND"
+        },
+        "updatedAt": "2026-08-07T13:12:38.889Z",
+        "hlc": "2026-08-07T13:12:38.889Z-0001-chrome_profile_beta",
+        "deviceId": "chrome_profile_beta"
+      }
+    ],
+    [
+      "user_records:event_item_002",
+      {
+        "collection": "user_records",
+        "recordId": "event_item_002",
+        "payload": {
+          "id": "event_item_002",
+          "title": "Event Audit Log from Profile B",
+          "category": "EVENT"
+        },
+        "updatedAt": "2026-08-07T13:12:39.889Z",
+        "hlc": "2026-08-07T13:12:39.889Z-0001-chrome_profile_beta",
+        "deviceId": "chrome_profile_beta"
+      }
+    ],
+    [
+      "user_records:cmd_item_001",
+      {
+        "collection": "user_records",
+        "recordId": "cmd_item_001",
+        "payload": {
+          "id": "cmd_item_001",
+          "title": "Command Op from Profile A (Payment)",
+          "price": 500,
+          "category": "COMMAND"
+        },
+        "updatedAt": "2026-08-07T13:07:38.888Z",
+        "hlc": "2026-08-07T13:07:38.888Z-0001-chrome_profile_alpha",
+        "deviceId": "chrome_profile_alpha"
+      }
+    ],
+    [
+      "user_records:event_item_001",
+      {
+        "collection": "user_records",
+        "recordId": "event_item_001",
+        "payload": {
+          "id": "event_item_001",
+          "title": "Event Audit Log from Profile A",
+          "category": "EVENT"
+        },
+        "updatedAt": "2026-08-07T13:07:39.888Z",
+        "hlc": "2026-08-07T13:07:39.888Z-0001-chrome_profile_alpha",
+        "deviceId": "chrome_profile_alpha"
+      }
+    ],
+    [
+      "user_records:shared_commutativity_item",
+      {
+        "collection": "user_records",
+        "recordId": "shared_commutativity_item",
+        "payload": {
+          "id": "shared_commutativity_item",
+          "title": "Profile B Payload (Newer HLC Winner)",
+          "price": 299
+        },
+        "updatedAt": "2026-08-07T13:17:38.048Z",
+        "hlc": "2026-08-07T13:12:38.015Z-0001-chrome_profile_beta",
+        "deviceId": "chrome_profile_beta"
+      }
+    ],
+    [
+      "user_records:rec_0",
+      {
+        "collection": "user_records",
+        "recordId": "rec_0",
+        "payload": {
+          "id": "rec_0",
+          "title": "Destructive Test Op #65",
+          "category": "EVENT",
+          "price": 165
+        },
+        "updatedAt": "2026-08-07T13:17:39.018Z",
+        "hlc": "2026-08-07T12:17:39.645Z-0001-dev_profile_alpha",
+        "deviceId": "dev_profile_alpha"
+      }
+    ],
+    [
+      "user_records:rec_1",
+      {
+        "collection": "user_records",
+        "recordId": "rec_1",
+        "payload": {
+          "id": "rec_1",
+          "title": "Destructive Test Op #66",
+          "category": "EVENT",
+          "price": 166
+        },
+        "updatedAt": "2026-08-07T13:17:39.018Z",
+        "hlc": "2026-08-07T12:17:39.655Z-0001-dev_profile_alpha",
+        "deviceId": "dev_profile_alpha"
+      }
+    ],
+    [
+      "user_records:rec_2",
+      {
+        "collection": "user_records",
+        "recordId": "rec_2",
+        "payload": {
+          "id": "rec_2",
+          "title": "Destructive Test Op #67",
+          "category": "EVENT",
+          "price": 167
+        },
+        "updatedAt": "2026-08-07T13:17:39.018Z",
+        "hlc": "2026-08-07T12:17:39.665Z-0001-dev_profile_alpha",
+        "deviceId": "dev_profile_alpha"
+      }
+    ],
+    [
+      "user_records:rec_3",
+      {
+        "collection": "user_records",
+        "recordId": "rec_3",
+        "payload": {
+          "id": "rec_3",
+          "title": "Destructive Test Op #68",
+          "category": "EVENT",
+          "price": 168
+        },
+        "updatedAt": "2026-08-07T13:17:39.018Z",
+        "hlc": "2026-08-07T12:17:39.675Z-0001-dev_profile_alpha",
+        "deviceId": "dev_profile_alpha"
+      }
+    ],
+    [
+      "user_records:rec_4",
+      {
+        "collection": "user_records",
+        "recordId": "rec_4",
+        "payload": {
+          "id": "rec_4",
+          "title": "Destructive Test Op #69",
+          "category": "EVENT",
+          "price": 169
+        },
+        "updatedAt": "2026-08-07T13:17:39.018Z",
+        "hlc": "2026-08-07T12:17:39.685Z-0001-dev_profile_alpha",
+        "deviceId": "dev_profile_alpha"
+      }
+    ],
+    [
+      "user_records:shared_record_1",
+      {
+        "collection": "user_records",
+        "recordId": "shared_record_1",
+        "payload": {
+          "id": "shared_record_1",
+          "title": "Profile B Edits (Newer HLC Winner)",
+          "price": 350
+        },
+        "updatedAt": "2026-08-07T13:17:39.862Z",
+        "hlc": "2026-08-07T13:17:39.851Z-0002-dev_client_beta",
+        "deviceId": "dev_client_beta"
       }
     ]
   ],
   "idempotencyKeys": [
     [
-      "op_dev_a_1",
+      "election_op_1",
+      "COMMITTED"
+    ],
+    [
+      "corrupt_op_1786108641210",
       {
         "status": "SYNCED",
-        "key": "orders:ord_501"
+        "key": "user_records:corrupt_rec_1"
       }
     ],
     [
-      "op_dev_b_1",
+      "boundary_op_0_1786108645387",
       {
         "status": "SYNCED",
-        "key": "orders:ord_501",
-        "winner": "merged"
+        "key": "user_records:boundary_rec_0"
       }
     ],
     [
-      "op_1785836218174_1",
+      "boundary_op_1_1786108647955",
       {
         "status": "SYNCED",
-        "key": "customers:tmp_cust_1785836218174"
+        "key": "user_records:boundary_rec_1"
       }
     ],
     [
-      "op_1785836218174_2",
+      "boundary_op_2_1786108650461",
       {
         "status": "SYNCED",
-        "key": "orders:tmp_ord_1785836218174"
+        "key": "user_records:boundary_rec_2"
       }
     ],
     [
-      "op_1785836453460_1",
+      "boundary_op_3_1786108652932",
       {
         "status": "SYNCED",
-        "key": "customers:tmp_cust_1785836453460"
+        "key": "user_records:boundary_rec_3"
       }
     ],
     [
-      "op_1785836453461_2",
+      "storm_op_1786108655531",
       {
         "status": "SYNCED",
-        "key": "orders:tmp_ord_1785836453460"
+        "key": "user_records:storm_rec_001"
       }
     ],
     [
-      "op_1785836578954_1",
+      "phys_op_0",
       {
         "status": "SYNCED",
-        "key": "customers:tmp_cust_1785836578954"
+        "key": "user_records:user_rec_0"
       }
     ],
     [
-      "op_1785836578955_2",
+      "phys_op_1",
       {
         "status": "SYNCED",
-        "key": "orders:tmp_ord_1785836578954"
+        "key": "user_records:user_rec_1"
       }
     ],
     [
-      "op_1785836882774_1",
+      "phys_op_2",
       {
         "status": "SYNCED",
-        "key": "customers:tmp_cust_1785836882774"
+        "key": "user_records:user_rec_2"
       }
     ],
     [
-      "op_1785836882775_2",
+      "phys_op_3",
       {
         "status": "SYNCED",
-        "key": "orders:tmp_ord_1785836882774"
+        "key": "user_records:user_rec_3"
       }
     ],
     [
-      "op_1785836954758_1",
+      "phys_op_4",
       {
         "status": "SYNCED",
-        "key": "customers:tmp_cust_1785836954758"
+        "key": "user_records:user_rec_4"
       }
     ],
     [
-      "op_1785836954758_2",
+      "phys_op_5",
       {
         "status": "SYNCED",
-        "key": "orders:tmp_ord_1785836954758"
+        "key": "user_records:user_rec_5"
+      }
+    ],
+    [
+      "phys_op_6",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6"
+      }
+    ],
+    [
+      "phys_op_7",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7"
+      }
+    ],
+    [
+      "phys_op_8",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8"
+      }
+    ],
+    [
+      "phys_op_9",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9"
+      }
+    ],
+    [
+      "phys_op_10",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_11",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_12",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_13",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_14",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_15",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_5",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_16",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_17",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_18",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_19",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_20",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_21",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_22",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_23",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_24",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_4"
+      }
+    ],
+    [
+      "phys_op_25",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_5",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_26",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_27",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_28",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_29",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_30",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_31",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_32",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_33",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_34",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_35",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_5",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_36",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_37",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_38",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_39",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9"
+      }
+    ],
+    [
+      "phys_op_40",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_41",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_42",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_43",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_44",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_45",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_5",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_46",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_47",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_48",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_49",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_50",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_51",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_52",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_53",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_54",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_4"
+      }
+    ],
+    [
+      "phys_op_55",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_5",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_56",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_57",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_58",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_59",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_60",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_61",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_62",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_63",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_64",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_65",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_5",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_66",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_67",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_68",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_69",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9"
+      }
+    ],
+    [
+      "phys_op_70",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_71",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_72",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_73",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_74",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_75",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_5",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_76",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_77",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_78",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_79",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_80",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_81",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_82",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_83",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_84",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_4"
+      }
+    ],
+    [
+      "phys_op_85",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_5",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_86",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_87",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_88",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_89",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_90",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_91",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_92",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_93",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_94",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_95",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_5",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_96",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_97",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_98",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_99",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9"
+      }
+    ],
+    [
+      "phys_op_100",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_101",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_102",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_103",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_104",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_105",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_5",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_106",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_107",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_108",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_109",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_110",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_111",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_112",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_113",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_114",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_4"
+      }
+    ],
+    [
+      "phys_op_115",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_5",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_116",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_117",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_118",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_119",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_120",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_121",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_122",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_123",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_124",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_125",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_5",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_126",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_127",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_128",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_129",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9"
+      }
+    ],
+    [
+      "phys_op_130",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_131",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_132",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_133",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_134",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_135",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_5",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_136",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_6",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_137",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_7",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_138",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_8",
+        "winner": "client"
+      }
+    ],
+    [
+      "phys_op_139",
+      {
+        "status": "SYNCED",
+        "key": "user_records:user_rec_9",
+        "winner": "client"
+      }
+    ],
+    [
+      "op_prof_b_state_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_item_001"
+      }
+    ],
+    [
+      "op_prof_b_cmd_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:cmd_item_002"
+      }
+    ],
+    [
+      "op_prof_b_event_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:event_item_002"
+      }
+    ],
+    [
+      "op_prof_a_state_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_item_001",
+        "winner": "server"
+      }
+    ],
+    [
+      "op_prof_a_cmd_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:cmd_item_001"
+      }
+    ],
+    [
+      "op_prof_a_event_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:event_item_001"
+      }
+    ],
+    [
+      "op_comm_b_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_commutativity_item"
+      }
+    ],
+    [
+      "op_comm_a_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_commutativity_item",
+        "winner": "server"
+      }
+    ],
+    [
+      "op_comm_a_2",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_commutativity_item",
+        "winner": "client"
+      }
+    ],
+    [
+      "op_comm_b_2",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_commutativity_item",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_0",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0"
+      }
+    ],
+    [
+      "dest_op_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1"
+      }
+    ],
+    [
+      "dest_op_2",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2"
+      }
+    ],
+    [
+      "dest_op_3",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3"
+      }
+    ],
+    [
+      "dest_op_4",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4"
+      }
+    ],
+    [
+      "dest_op_5",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_6",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_7",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_8",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_9",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_10",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_11",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_12",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_13",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_14",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_15",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_16",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_17",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_18",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_19",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_20",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_21",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_22",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_23",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_24",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_25",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_26",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_27",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_28",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_29",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_30",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_31",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_32",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_33",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_34",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_35",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_36",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_37",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_38",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_39",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_40",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_41",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_42",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_43",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_44",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_45",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_46",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_47",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_48",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_49",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_50",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_51",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_52",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_53",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_54",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_55",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_56",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_57",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_58",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_59",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_60",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_61",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_62",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_63",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_64",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_65",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_0",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_66",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_1",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_67",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_2",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_68",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_3",
+        "winner": "client"
+      }
+    ],
+    [
+      "dest_op_69",
+      {
+        "status": "SYNCED",
+        "key": "user_records:rec_4",
+        "winner": "client"
+      }
+    ],
+    [
+      "op_prof_a_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_record_1"
+      }
+    ],
+    [
+      "op_prof_b_1",
+      {
+        "status": "SYNCED",
+        "key": "user_records:shared_record_1",
+        "winner": "client"
       }
     ]
   ]

@@ -189,7 +189,7 @@
       "backendUrl": "http://localhost:3000",
       "websiteUrl": "http://localhost:3000",
       "backendApiUrl": "http://localhost:3000",
-      "apiKeyHash": "760fa517bd2709c44380c6ea32b7bc6a09471b173649e291d2de9475141365b7",
+      "apiKeyHash": "af94abf262f36cf8ecb0386c8bdc6cb706617bbbed4c9bce2df280988f58bede",
       "contactEmail": "admin@localhost",
       "cacheStrategy": "stale-while-revalidate",
       "themeColor": "#6366f1",
@@ -204,7 +204,7 @@
         "/favicon.ico"
       ],
       "createdAt": "2026-08-03T16:05:17.562Z",
-      "updatedAt": "2026-08-04T09:49:14.757Z"
+      "updatedAt": "2026-08-07T13:17:18.604Z"
     }
   ]
 ]
