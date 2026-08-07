@@ -6,6 +6,38 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   /* ─────────────────────────────────────────────────────────
+     0. THEME MANAGEMENT (LIGHT / DARK)
+  ───────────────────────────────────────────────────────── */
+  const themeToggleBtn = document.getElementById('theme-toggle-btn');
+  const themeIcon      = document.getElementById('theme-icon');
+  const themeText      = document.getElementById('theme-text');
+
+  function getActiveTheme() {
+    return document.documentElement.getAttribute('data-theme') || 'dark';
+  }
+
+  function updateThemeUI(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('asg-theme', theme); } catch (_) {}
+    if (themeIcon) themeIcon.textContent = theme === 'light' ? '☀️' : '🌙';
+    if (themeText) themeText.textContent = theme === 'light' ? 'Light' : 'Dark';
+    if (themeToggleBtn) {
+      themeToggleBtn.setAttribute('title', `Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`);
+    }
+  }
+
+  // Initial sync for theme UI
+  updateThemeUI(getActiveTheme());
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      const current = getActiveTheme();
+      const nextTheme = current === 'light' ? 'dark' : 'light';
+      updateThemeUI(nextTheme);
+    });
+  }
+
+  /* ─────────────────────────────────────────────────────────
      1. GLOBAL TAB SWITCHING
   ───────────────────────────────────────────────────────── */
   const mainTabs  = document.querySelectorAll('.tabs .tab-btn');

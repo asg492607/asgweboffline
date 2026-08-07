@@ -9,6 +9,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="/sdk/asg-offline.js" data-app-id="asgweboffline-app"></script>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('asg-theme');
+      const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+      const theme = savedTheme ? savedTheme : (prefersLight ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 </head>
 <body>
 
@@ -22,6 +30,10 @@
       </div>
     </div>
     <div class="nav-status">
+      <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Toggle Theme" title="Toggle Light / Dark Mode">
+        <span class="theme-icon" id="theme-icon">🌙</span>
+        <span id="theme-text">Dark</span>
+      </button>
       <div class="status-indicator">
         <span class="dot" id="net-dot"></span>
         <span id="network-status-label">Engine Active</span>
